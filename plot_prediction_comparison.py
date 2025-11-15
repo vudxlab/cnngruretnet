@@ -159,7 +159,7 @@ def regenerate_predictions_full(results_dir, output_step, model):
     import tensorflow as tf
     from data_cache import DataCache
     from config import Config
-    from data_loader import load_data
+    from data_loader import VibrationDataLoader
     from data_preprocessing import DataPreprocessor
 
     model_path = os.path.join(results_dir, str(output_step), model)
@@ -186,7 +186,9 @@ def regenerate_predictions_full(results_dir, output_step, model):
         else:
             # Tạo cache mới
             mat_file = Config.get_mat_file_path()
-            raw_data = load_data(mat_file, sensor_idx=0)
+            data_loader = VibrationDataLoader(mat_file)
+            full_data = data_loader.load_mat_file()
+            raw_data = data_loader.get_sensor_data(sensor_idx=0)
 
             preprocessor = DataPreprocessor(
                 input_steps=50,
@@ -451,7 +453,7 @@ def plot_overlay_comparison(results_dir, output_step, models, output_dir, num_sa
     try:
         from data_cache import DataCache
         from config import Config
-        from data_loader import load_data
+        from data_loader import VibrationDataLoader
         from data_preprocessing import DataPreprocessor
 
         cache = DataCache()
@@ -467,7 +469,9 @@ def plot_overlay_comparison(results_dir, output_step, models, output_dir, num_sa
         else:
             # Tạo cache nếu chưa có
             mat_file = Config.get_mat_file_path()
-            raw_data = load_data(mat_file, sensor_idx=0)
+            data_loader = VibrationDataLoader(mat_file)
+            full_data = data_loader.load_mat_file()
+            raw_data = data_loader.get_sensor_data(sensor_idx=0)
             preprocessor = DataPreprocessor(input_steps=50, output_steps=output_step, add_noise=True)
             data_dict = preprocessor.prepare_data(raw_data)
             cache.save_cache(data_dict, cache_key)
