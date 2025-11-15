@@ -1,0 +1,47 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+
+# Virtual environments
+venv/
+env/
+ENV/
+
+# Results & outputs
+results/
+output/
+output_fixed/
+*.keras
+*.h5
+*.pkl
+*.npy
+
+# Jupyter notebooks (old experiments)
+1_Conv1D model/
+2_GRU model/
+3_Conv1D-GRU model/
+4_Code Figure trong bai bao/
+*.ipynb
+.ipynb_checkpoints/
+
+# Data files (large)
+# Data/*.mat  # Uncomment if you want to ignore data files
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Excel
+~$*.xlsx
