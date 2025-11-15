@@ -29,8 +29,11 @@ results/
 # Kích hoạt environment
 conda activate tf
 
-# Chạy script phân tích
+# Chạy script phân tích (chỉ metrics)
 python analyze_existing_results.py --results_dir results --output_dir analysis
+
+# Chạy với prediction comparisons (mất thêm 3-5 phút)
+python analyze_existing_results.py --results_dir results --output_dir analysis --plot_predictions
 
 # Hoặc nếu folder kết quả tên khác:
 python analyze_existing_results.py --results_dir ten_folder_khac --output_dir analysis
@@ -89,6 +92,15 @@ Best MAE,gru,10,0.000950,0.001345,0.000950
 **Insight:** Cấu hình tốt nhất cho từng metric
 
 ### 5. `summary_report.txt` - Báo cáo text
+
+### 6. `predictions_comparison/` - Prediction comparisons (nếu dùng --plot_predictions)
+
+Folder chứa biểu đồ so sánh predictions:
+- `comparison_out{5,10,15,20,30,40}.png` - So sánh models cho mỗi output_step
+- `comparison_{model}.png` - So sánh output_steps cho mỗi model
+- `grid_sample{0,1,2}.png` - Grid tổng quan tất cả combinations
+
+**Xem chi tiết:** `PREDICTION_COMPARISON_GUIDE.md`
 
 ```
 ==================================================================================================
@@ -226,10 +238,14 @@ Conv1D      🟡 0.87  🟠 0.85  🟠 0.83  🔴 0.81  🔴 0.79  🔴 0.77
 ## ⚡ One-liner
 
 ```bash
+# Chỉ metrics (30 giây)
 conda activate tf && python analyze_existing_results.py
+
+# Metrics + prediction comparisons (3-5 phút)
+conda activate tf && python analyze_existing_results.py --plot_predictions
 ```
 
-**Done! Chỉ 30 giây!** 🎉
+**Done!** 🎉
 
 ---
 

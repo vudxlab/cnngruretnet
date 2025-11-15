@@ -39,6 +39,17 @@ def parse_args():
         default='analysis',
         help='Thư mục lưu kết quả phân tích (default: analysis/)'
     )
+    parser.add_argument(
+        '--plot_predictions',
+        action='store_true',
+        help='Tạo prediction comparison plots (mất thêm thời gian)'
+    )
+    parser.add_argument(
+        '--num_samples',
+        type=int,
+        default=5,
+        help='Số samples cho prediction plots (default: 5)'
+    )
     return parser.parse_args()
 
 
@@ -415,6 +426,82 @@ def generate_summary_report(metrics_df, output_dir):
     print("\n" + '\n'.join(report))
 
 
+def generate_prediction_comparisons(results_dir, output_dir, num_samples=5):
+    """
+    Tạo prediction comparison visualizations
+
+    Args:
+        results_dir: Thư mục chứa kết quả
+        output_dir: Thư mục output
+        num_samples: Số samples để vẽ
+    """
+    # Import here to avoid dependency if not needed
+    try:
+        from plot_prediction_comparison import (
+            plot_comparison_by_output_step,
+            plot_comparison_by_model,
+            plot_all_combinations_grid
+        )
+    except ImportError:
+        print("\n⚠️  Không thể import plot_prediction_comparison")
+        return
+
+    print("\n" + "=" * 100)
+    print("  TẠO PREDICTION COMPARISON VISUALIZATIONS")
+    print("=" * 100)
+
+    # Detect models và output_steps
+    models = []
+    output_steps = []
+
+    for folder in os.listdir(results_dir):
+        folder_path = os.path.join(results_dir, folder)
+        if not os.path.isdir(folder_path):
+            continue
+
+        try:
+            out_step = int(folder)
+            output_steps.append(out_step)
+
+            for model_folder in os.listdir(folder_path):
+                if os.path.isdir(os.path.join(folder_path, model_folder)):
+                    if model_folder not in models:
+                        models.append(model_folder)
+        except ValueError:
+            continue
+
+    models = sorted(models)
+    output_steps = sorted(output_steps)
+
+    print(f"\nĐã phát hiện:")
+    print(f"  Models: {models}")
+    print(f"  Output steps: {output_steps}")
+
+    if not models or not output_steps:
+        print("\n⚠️  Không tìm thấy dữ liệu cho predictions!")
+        return
+
+    # 1. Comparison by output_step
+    print("\n1️⃣  Comparison by Output Step:")
+    for out_step in output_steps:
+        plot_comparison_by_output_step(results_dir, out_step, models,
+                                      output_dir, num_samples=num_samples)
+
+    # 2. Comparison by model
+    print("\n2️⃣  Comparison by Model:")
+    for model in models:
+        plot_comparison_by_model(results_dir, model, output_steps,
+                                output_dir, num_samples=num_samples)
+
+    # 3. Grid overview
+    print("\n3️⃣  Overview Grid:")
+    for sample_idx in range(min(3, num_samples)):
+        plot_all_combinations_grid(results_dir, models, output_steps,
+                                   output_dir, sample_idx=sample_idx)
+
+    print(f"\n✅ Prediction comparisons đã lưu tại: {output_dir}/predictions_comparison/")
+
+
 def main():
     """Main function"""
     args = parse_args()
@@ -439,12 +526,17 @@ def main():
         print("\n❌ Không tìm thấy metrics nào!")
         sys.exit(1)
 
-    # Tạo các phân tích
+    # Tạo các phân tích metrics
     create_comparison_table(metrics_df, args.output_dir)
     plot_metrics_vs_output_steps(metrics_df, args.output_dir)
     plot_heatmap(metrics_df, args.output_dir)
     find_best_configurations(metrics_df, args.output_dir)
     generate_summary_report(metrics_df, args.output_dir)
+
+    # Tạo prediction comparisons nếu được yêu cầu
+    if args.plot_predictions:
+        generate_prediction_comparisons(args.results_dir, args.output_dir,
+                                       num_samples=args.num_samples)
 
     print("\n" + "=" * 100)
     print("✅ HOÀN THÀNH PHÂN TÍCH!")
@@ -456,6 +548,13 @@ def main():
     print("  ✓ heatmaps.png                # Heatmaps cho các metrics")
     print("  ✓ best_configurations.csv     # Các cấu hình tốt nhất")
     print("  ✓ summary_report.txt          # Báo cáo tổng hợp")
+
+    if args.plot_predictions:
+        print("\n  📊 Prediction Comparisons:")
+        print("  ✓ predictions_comparison/comparison_out*.png  # So sánh models theo output_step")
+        print("  ✓ predictions_comparison/comparison_*.png     # So sánh output_steps theo model")
+        print("  ✓ predictions_comparison/grid_sample*.png     # Grid tổng quan")
+
     print("=" * 100)
 
 

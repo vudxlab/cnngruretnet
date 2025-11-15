@@ -1,0 +1,484 @@
+"""
+Script vẽ biểu đồ so sánh predictions giữa các models và output_steps
+"""
+
+import os
+import sys
+import argparse
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+import seaborn as sns
+from pathlib import Path
+import pickle
+
+
+def parse_args():
+    """Parse command line arguments"""
+    parser = argparse.ArgumentParser(
+        description="Vẽ biểu đồ so sánh predictions"
+    )
+    parser.add_argument(
+        '--results_dir',
+        type=str,
+        default='results',
+        help='Thư mục chứa kết quả (default: results/)'
+    )
+    parser.add_argument(
+        '--output_dir',
+        type=str,
+        default='analysis',
+        help='Thư mục lưu kết quả (default: analysis/)'
+    )
+    parser.add_argument(
+        '--num_samples',
+        type=int,
+        default=5,
+        help='Số samples để vẽ (default: 5)'
+    )
+    return parser.parse_args()
+
+
+def load_test_data_and_predictions(results_dir, output_step, model):
+    """
+    Load test data và predictions từ folder kết quả
+
+    Args:
+        results_dir: Thư mục chứa kết quả
+        output_step: Output step
+        model: Tên model
+
+    Returns:
+        tuple: (X_test, y_test, y_pred, scaler_values) hoặc None nếu không tìm thấy
+    """
+    model_path = os.path.join(results_dir, str(output_step), model)
+
+    # Kiểm tra folder tồn tại
+    if not os.path.exists(model_path):
+        return None
+
+    try:
+        # Load scaler
+        scaler_path = os.path.join(model_path, 'scaler_values.npy')
+        if os.path.exists(scaler_path):
+            scaler_values = np.load(scaler_path, allow_pickle=True).item()
+        else:
+            scaler_values = None
+
+        # Cần load model và predict lại vì không lưu predictions
+        # Hoặc có thể load từ predictions folder nếu có
+        predictions_folder = os.path.join(model_path, 'predictions')
+
+        if not os.path.exists(predictions_folder):
+            print(f"  ⚠️  Không tìm thấy predictions folder: {model}/{output_step}")
+            return None
+
+        # Tìm các file numpy trong predictions folder (nếu có)
+        # Thông thường predictions được lưu trong folder này
+        # Nhưng cần re-generate từ model nếu chưa có
+
+        return None  # Placeholder, cần implement load predictions
+
+    except Exception as e:
+        print(f"  ❌ Lỗi khi load data: {e}")
+        return None
+
+
+def regenerate_predictions(results_dir, output_step, model):
+    """
+    Re-generate predictions từ saved model
+
+    Args:
+        results_dir: Thư mục chứa kết quả
+        output_step: Output step
+        model: Tên model
+
+    Returns:
+        tuple: (y_true, y_pred) hoặc None
+    """
+    import tensorflow as tf
+    from data_cache import DataCache
+    from config import Config
+
+    model_path = os.path.join(results_dir, str(output_step), model)
+
+    try:
+        # Load model
+        model_file = os.path.join(model_path, 'model_saved.keras')
+        if not os.path.exists(model_file):
+            return None
+
+        keras_model = tf.keras.models.load_model(model_file)
+
+        # Load data from cache
+        cache = DataCache()
+        cache_key = cache.get_cache_key(
+            sensor_idx=0,  # Assume sensor 0
+            output_steps=output_step,
+            add_noise=True,  # Assume with noise
+            input_steps=50
+        )
+
+        if not cache.cache_exists(cache_key):
+            print(f"  ⚠️  Không tìm thấy cache cho output_step={output_step}")
+            return None
+
+        data_dict = cache.load_cache(cache_key)
+
+        # Get test data
+        X_test = data_dict['X_test']
+        y_test = data_dict['y_test']
+        preprocessor = data_dict['preprocessor']
+
+        # Predict
+        y_pred_scaled = keras_model.predict(X_test[:10], verbose=0)
+
+        # Denormalize
+        y_true = preprocessor.inverse_transform(y_test[:10])
+        y_pred = preprocessor.inverse_transform(y_pred_scaled)
+
+        return y_true, y_pred
+
+    except Exception as e:
+        print(f"  ❌ Lỗi regenerate predictions: {e}")
+        return None
+
+
+def plot_comparison_by_output_step(results_dir, output_step, models, output_dir, num_samples=3):
+    """
+    Vẽ biểu đồ so sánh predictions của các models cho cùng output_step
+
+    Args:
+        results_dir: Thư mục kết quả
+        output_step: Output step cần so sánh
+        models: Danh sách models
+        output_dir: Thư mục output
+        num_samples: Số samples để vẽ
+    """
+    print(f"\n📊 Đang vẽ comparison cho output_step={output_step}...")
+
+    # Load predictions cho tất cả models
+    predictions_data = {}
+
+    for model in models:
+        result = regenerate_predictions(results_dir, output_step, model)
+        if result is not None:
+            y_true, y_pred = result
+            predictions_data[model] = {
+                'y_true': y_true,
+                'y_pred': y_pred
+            }
+            print(f"  ✓ Loaded {model}")
+
+    if not predictions_data:
+        print(f"  ⚠️  Không có predictions cho output_step={output_step}")
+        return
+
+    # Vẽ biểu đồ
+    num_models = len(predictions_data)
+    fig, axes = plt.subplots(num_samples, num_models, figsize=(5*num_models, 3*num_samples))
+
+    if num_samples == 1:
+        axes = axes.reshape(1, -1)
+    if num_models == 1:
+        axes = axes.reshape(-1, 1)
+
+    colors = {'conv1d_gru': '#2ecc71', 'gru': '#3498db', 'conv1d': '#e74c3c'}
+
+    # Get y_true (same for all models)
+    y_true_ref = list(predictions_data.values())[0]['y_true']
+
+    for sample_idx in range(num_samples):
+        for model_idx, (model, data) in enumerate(predictions_data.items()):
+            ax = axes[sample_idx, model_idx]
+
+            y_true_sample = data['y_true'][sample_idx]
+            y_pred_sample = data['y_pred'][sample_idx]
+
+            # Plot
+            time_steps = range(len(y_true_sample))
+
+            ax.plot(time_steps, y_true_sample, 'o-', linewidth=2, markersize=6,
+                   label='True', color='black', alpha=0.7)
+            ax.plot(time_steps, y_pred_sample, 's-', linewidth=2, markersize=6,
+                   label='Predicted', color=colors.get(model, '#95a5a6'))
+
+            # Calculate error
+            mae = np.mean(np.abs(y_true_sample - y_pred_sample))
+
+            ax.set_title(f'{model.upper().replace("_", "-")}\nSample {sample_idx+1} (MAE={mae:.6f})',
+                        fontsize=11, fontweight='bold')
+            ax.set_xlabel('Timestep', fontsize=10)
+            ax.set_ylabel('Value', fontsize=10)
+            ax.legend(fontsize=9, loc='best')
+            ax.grid(True, alpha=0.3, linestyle='--')
+
+    plt.suptitle(f'Prediction Comparison - Output Steps = {output_step}',
+                fontsize=14, fontweight='bold', y=1.00)
+    plt.tight_layout()
+
+    # Save
+    os.makedirs(os.path.join(output_dir, 'predictions_comparison'), exist_ok=True)
+    output_file = os.path.join(output_dir, 'predictions_comparison', f'comparison_out{output_step}.png')
+    plt.savefig(output_file, dpi=300, bbox_inches='tight')
+    plt.close()
+
+    print(f"  ✓ Đã lưu: {output_file}")
+
+
+def plot_comparison_by_model(results_dir, model, output_steps, output_dir, num_samples=3):
+    """
+    Vẽ biểu đồ so sánh predictions của cùng model với các output_steps khác nhau
+
+    Args:
+        results_dir: Thư mục kết quả
+        model: Model cần so sánh
+        output_steps: Danh sách output_steps
+        output_dir: Thư mục output
+        num_samples: Số samples để vẽ
+    """
+    print(f"\n📊 Đang vẽ comparison cho model={model}...")
+
+    # Load predictions cho tất cả output_steps
+    predictions_data = {}
+
+    for out_step in output_steps:
+        result = regenerate_predictions(results_dir, out_step, model)
+        if result is not None:
+            y_true, y_pred = result
+            predictions_data[out_step] = {
+                'y_true': y_true,
+                'y_pred': y_pred
+            }
+            print(f"  ✓ Loaded output_step={out_step}")
+
+    if not predictions_data:
+        print(f"  ⚠️  Không có predictions cho model={model}")
+        return
+
+    # Vẽ biểu đồ
+    num_output_steps = len(predictions_data)
+    fig, axes = plt.subplots(num_samples, num_output_steps, figsize=(4*num_output_steps, 3*num_samples))
+
+    if num_samples == 1:
+        axes = axes.reshape(1, -1)
+    if num_output_steps == 1:
+        axes = axes.reshape(-1, 1)
+
+    for sample_idx in range(num_samples):
+        for out_idx, (out_step, data) in enumerate(predictions_data.items()):
+            ax = axes[sample_idx, out_idx]
+
+            # Get data (chỉ lấy số timesteps = output_step)
+            y_true_sample = data['y_true'][sample_idx][:out_step]
+            y_pred_sample = data['y_pred'][sample_idx][:out_step]
+
+            # Plot
+            time_steps = range(len(y_true_sample))
+
+            ax.plot(time_steps, y_true_sample, 'o-', linewidth=2, markersize=6,
+                   label='True', color='black', alpha=0.7)
+            ax.plot(time_steps, y_pred_sample, 's-', linewidth=2, markersize=6,
+                   label='Predicted', color='#e74c3c')
+
+            # Calculate error
+            mae = np.mean(np.abs(y_true_sample - y_pred_sample))
+
+            ax.set_title(f'Out={out_step} steps\nSample {sample_idx+1} (MAE={mae:.6f})',
+                        fontsize=11, fontweight='bold')
+            ax.set_xlabel('Timestep', fontsize=10)
+            ax.set_ylabel('Value', fontsize=10)
+            ax.legend(fontsize=9, loc='best')
+            ax.grid(True, alpha=0.3, linestyle='--')
+
+    plt.suptitle(f'Prediction Comparison - {model.upper().replace("_", "-")}',
+                fontsize=14, fontweight='bold', y=1.00)
+    plt.tight_layout()
+
+    # Save
+    os.makedirs(os.path.join(output_dir, 'predictions_comparison'), exist_ok=True)
+    output_file = os.path.join(output_dir, 'predictions_comparison', f'comparison_{model}.png')
+    plt.savefig(output_file, dpi=300, bbox_inches='tight')
+    plt.close()
+
+    print(f"  ✓ Đã lưu: {output_file}")
+
+
+def plot_all_combinations_grid(results_dir, models, output_steps, output_dir, sample_idx=0):
+    """
+    Vẽ grid tổng quan tất cả combinations (models × output_steps)
+
+    Args:
+        results_dir: Thư mục kết quả
+        models: Danh sách models
+        output_steps: Danh sách output_steps
+        output_dir: Thư mục output
+        sample_idx: Index của sample cần vẽ
+    """
+    print(f"\n📊 Đang vẽ grid tổng quan (sample {sample_idx})...")
+
+    num_models = len(models)
+    num_steps = len(output_steps)
+
+    fig, axes = plt.subplots(num_models, num_steps, figsize=(3.5*num_steps, 3*num_models))
+
+    if num_models == 1:
+        axes = axes.reshape(1, -1)
+    if num_steps == 1:
+        axes = axes.reshape(-1, 1)
+
+    colors = {'conv1d_gru': '#2ecc71', 'gru': '#3498db', 'conv1d': '#e74c3c'}
+
+    for model_idx, model in enumerate(models):
+        for step_idx, out_step in enumerate(output_steps):
+            ax = axes[model_idx, step_idx]
+
+            # Load predictions
+            result = regenerate_predictions(results_dir, out_step, model)
+
+            if result is None:
+                ax.text(0.5, 0.5, 'No Data', ha='center', va='center', fontsize=12)
+                ax.set_title(f'{model}\nout={out_step}', fontsize=10)
+                continue
+
+            y_true, y_pred = result
+            y_true_sample = y_true[sample_idx][:out_step]
+            y_pred_sample = y_pred[sample_idx][:out_step]
+
+            # Plot
+            time_steps = range(len(y_true_sample))
+
+            ax.plot(time_steps, y_true_sample, 'o-', linewidth=1.5, markersize=4,
+                   label='True', color='black', alpha=0.7)
+            ax.plot(time_steps, y_pred_sample, 's-', linewidth=1.5, markersize=4,
+                   label='Pred', color=colors.get(model, '#95a5a6'))
+
+            # Calculate MAE
+            mae = np.mean(np.abs(y_true_sample - y_pred_sample))
+
+            # Title
+            if step_idx == 0:
+                title = f'{model.upper().replace("_", "-")}\nout={out_step}\nMAE={mae:.4f}'
+            else:
+                title = f'out={out_step}\nMAE={mae:.4f}'
+
+            ax.set_title(title, fontsize=9, fontweight='bold')
+
+            if model_idx == num_models - 1:
+                ax.set_xlabel('Step', fontsize=8)
+            if step_idx == 0:
+                ax.set_ylabel('Value', fontsize=8)
+
+            if model_idx == 0 and step_idx == 0:
+                ax.legend(fontsize=7, loc='best')
+
+            ax.grid(True, alpha=0.2, linestyle='--')
+            ax.tick_params(labelsize=7)
+
+    plt.suptitle(f'Predictions Grid - All Combinations (Sample {sample_idx+1})',
+                fontsize=15, fontweight='bold')
+    plt.tight_layout()
+
+    # Save
+    os.makedirs(os.path.join(output_dir, 'predictions_comparison'), exist_ok=True)
+    output_file = os.path.join(output_dir, 'predictions_comparison', f'grid_sample{sample_idx}.png')
+    plt.savefig(output_file, dpi=300, bbox_inches='tight')
+    plt.close()
+
+    print(f"  ✓ Đã lưu: {output_file}")
+
+
+def main():
+    """Main function"""
+    args = parse_args()
+
+    print("=" * 100)
+    print("  VẼ BIỂU ĐỒ SO SÁNH PREDICTIONS")
+    print("=" * 100)
+
+    # Kiểm tra results_dir
+    if not os.path.exists(args.results_dir):
+        print(f"\n❌ Không tìm thấy thư mục: {args.results_dir}")
+        sys.exit(1)
+
+    # Tạo output directory
+    os.makedirs(args.output_dir, exist_ok=True)
+
+    # Detect models và output_steps
+    models = []
+    output_steps = []
+
+    for folder in os.listdir(args.results_dir):
+        folder_path = os.path.join(args.results_dir, folder)
+        if not os.path.isdir(folder_path):
+            continue
+
+        # Check if folder name is number (output_step)
+        try:
+            out_step = int(folder)
+            output_steps.append(out_step)
+
+            # Get models in this folder
+            for model_folder in os.listdir(folder_path):
+                if os.path.isdir(os.path.join(folder_path, model_folder)):
+                    if model_folder not in models:
+                        models.append(model_folder)
+        except ValueError:
+            continue
+
+    models = sorted(models)
+    output_steps = sorted(output_steps)
+
+    print(f"\nĐã phát hiện:")
+    print(f"  Models: {models}")
+    print(f"  Output steps: {output_steps}")
+
+    if not models or not output_steps:
+        print("\n❌ Không tìm thấy dữ liệu!")
+        sys.exit(1)
+
+    # Vẽ các biểu đồ
+    print("\n" + "=" * 100)
+    print("  ĐANG TẠO VISUALIZATIONS")
+    print("=" * 100)
+
+    # 1. Comparison by output_step (so sánh models cho mỗi output_step)
+    print("\n1. Comparison by Output Step:")
+    for out_step in output_steps:
+        plot_comparison_by_output_step(args.results_dir, out_step, models,
+                                      args.output_dir, num_samples=args.num_samples)
+
+    # 2. Comparison by model (so sánh output_steps cho mỗi model)
+    print("\n2. Comparison by Model:")
+    for model in models:
+        plot_comparison_by_model(args.results_dir, model, output_steps,
+                                args.output_dir, num_samples=args.num_samples)
+
+    # 3. Grid tổng quan
+    print("\n3. Overview Grid:")
+    for sample_idx in range(min(3, args.num_samples)):
+        plot_all_combinations_grid(args.results_dir, models, output_steps,
+                                   args.output_dir, sample_idx=sample_idx)
+
+    print("\n" + "=" * 100)
+    print("✅ HOÀN THÀNH!")
+    print("=" * 100)
+    print(f"\n📁 Kết quả lưu tại: {args.output_dir}/predictions_comparison/")
+    print("\nCác files đã tạo:")
+    print("  - comparison_out{5,10,15,20,30,40}.png  # So sánh models cho mỗi output_step")
+    print("  - comparison_{model}.png                 # So sánh output_steps cho mỗi model")
+    print("  - grid_sample{0,1,2}.png                 # Grid tổng quan")
+    print("=" * 100)
+
+
+if __name__ == "__main__":
+    try:
+        main()
+    except KeyboardInterrupt:
+        print("\n\n⚠️  Interrupted by user!")
+        sys.exit(130)
+    except Exception as e:
+        print(f"\n\n❌ Error: {e}")
+        import traceback
+        traceback.print_exc()
+        sys.exit(1)

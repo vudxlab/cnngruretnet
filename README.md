@@ -170,6 +170,42 @@ conv_out = Add()([conv_out, input_resized])  # Residual connection
 - Data split **theo thời gian** (không shuffle)
 - Sequences tạo **sau khi split** data
 
+## So sánh Models và Output Steps
+
+### Quick Analysis (30 giây)
+
+```bash
+# Phân tích và so sánh tất cả models với các output_steps
+python analyze_existing_results.py
+```
+
+Tạo ra:
+- `comparison_table.csv` - Bảng so sánh đầy đủ
+- `metrics_vs_output_steps.png` - Line charts (R², RMSE, MAE)
+- `heatmaps.png` - Heatmaps cho visual comparison
+- `best_configurations.csv` - Best configs cho từng metric
+- `summary_report.txt` - Báo cáo chi tiết
+
+### Full Analysis với Prediction Visualizations (3-5 phút)
+
+```bash
+# Phân tích metrics + vẽ prediction comparisons
+python analyze_existing_results.py --plot_predictions
+
+# Tùy chỉnh số samples
+python analyze_existing_results.py --plot_predictions --num_samples 3
+```
+
+Tạo thêm:
+- `predictions_comparison/comparison_out*.png` - So sánh models theo output_step
+- `predictions_comparison/comparison_*.png` - So sánh output_steps theo model
+- `predictions_comparison/grid_sample*.png` - Grid tổng quan
+
+**Xem chi tiết:**
+- `QUICK_COMPARISON.md` - Hướng dẫn nhanh
+- `PREDICTION_COMPARISON_GUIDE.md` - Hướng dẫn chi tiết predictions
+- `COMPARISON_GUIDE.md` - Hướng dẫn train từ đầu
+
 ## Tác giả
 
 Project nghiên cứu về Time Series Forecasting cho dữ liệu rung động công nghiệp.

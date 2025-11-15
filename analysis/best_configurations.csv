@@ -1,0 +1,4 @@
+Metric,Model,Output Steps,Value,RMSE,MAE
+Best R²,conv1d_gru,10,0.815698,0.002909,0.001912
+Best RMSE,conv1d_gru,10,0.002909,0.002909,0.001912
+Best MAE,conv1d_gru,10,0.001912,0.002909,0.001912
