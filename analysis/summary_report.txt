@@ -13,25 +13,25 @@ PERFORMANCE SUMMARY BY MODEL (Test Set)
 
 
 CONV1D:
-    R² Range: 0.833686 → 0.890006
-    RMSE Range: 0.002246 → 0.002766
-    MAE Range: 0.001546 → 0.001839
+    R² Range: 0.828127 → 0.890006
+    RMSE Range: 0.002246 → 0.002814
+    MAE Range: 0.001546 → 0.001853
     Best output_step: 5 (R²=0.890006, RMSE=0.002246)
-    Worst output_step: 15 (R²=0.833686, RMSE=0.002766)
-    Performance degradation: 6.33%
+    Worst output_step: 20 (R²=0.828127, RMSE=0.002814)
+    Performance degradation: 6.95%
 
 CONV1D-GRU:
-    R² Range: 0.890400 → 0.931634
-    RMSE Range: 0.001771 → 0.002247
-    MAE Range: 0.001117 → 0.001361
+    R² Range: 0.901720 → 0.931634
+    RMSE Range: 0.001771 → 0.002126
+    MAE Range: 0.001117 → 0.001306
     Best output_step: 5 (R²=0.931634, RMSE=0.001771)
-    Worst output_step: 20 (R²=0.890400, RMSE=0.002247)
-    Performance degradation: 4.43%
+    Worst output_step: 15 (R²=0.901720, RMSE=0.002126)
+    Performance degradation: 3.21%
 
 GRU:
     R² Range: 0.873790 → 0.914613
     RMSE Range: 0.001979 → 0.002408
-    MAE Range: 0.001330 → 0.001573
+    MAE Range: 0.001328 → 0.001573
     Best output_step: 5 (R²=0.914613, RMSE=0.001979)
     Worst output_step: 10 (R²=0.873790, RMSE=0.002408)
     Performance degradation: 4.46%
@@ -60,9 +60,9 @@ Output Steps = 15:
     Best model: CONV1D_GRU (R²=0.901720)
 
 Output Steps = 20:
-    Average R²: 0.873031 ± 0.029134
-    Average RMSE: 0.002409 ± 0.000270
-    Average MAE: 0.001504 ± 0.000251
-    Best model: CONV1D_GRU (R²=0.890400)
+    Average R²: 0.876259 ± 0.042675
+    Average RMSE: 0.002365 ± 0.000401
+    Average MAE: 0.001448 ± 0.000360
+    Best model: CONV1D_GRU (R²=0.909469)
 
 ====================================================================================================
