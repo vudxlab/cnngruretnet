@@ -42,9 +42,9 @@ class Config:
 
     # ==================== DATA SPLIT ====================
     # Tỷ lệ chia dữ liệu (theo thời gian, KHÔNG shuffle)
-    TRAIN_RATIO = 0.7
-    VAL_RATIO = 0.15
-    TEST_RATIO = 0.15  # Tự động = 1 - train - val
+    TRAIN_RATIO = 0.6
+    VAL_RATIO = 0.2
+    TEST_RATIO = 0.2  # Tự động = 1 - train - val
 
     # ==================== MODEL ARCHITECTURE ====================
     # Conv1D parameters
@@ -69,13 +69,13 @@ class Config:
     METRICS = ['mae']
 
     # Training parameters
-    EPOCHS = 10
+    EPOCHS = 1000
     BATCH_SIZE = 64
     VALIDATION_SPLIT = 0.0  # Không dùng vì đã chia riêng val set
 
     # Early stopping
     EARLY_STOPPING_MONITOR = 'val_loss'
-    EARLY_STOPPING_PATIENCE = 10
+    EARLY_STOPPING_PATIENCE = 40
     EARLY_STOPPING_RESTORE_BEST_WEIGHTS = True
 
     # ==================== PREDICTION PARAMETERS ====================
