@@ -11,13 +11,13 @@ env/
 ENV/
 
 # Results & outputs
-results/
-output/
-output_fixed/
-*.keras
-*.h5
-*.pkl
-*.npy
+# results/
+# output/
+# output_fixed/
+# *.keras
+# *.h5
+#*.pkl
+# *.npy
 
 # Jupyter notebooks (old experiments)
 1_Conv1D model/
