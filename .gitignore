@@ -19,6 +19,10 @@ ENV/
 #*.pkl
 # *.npy
 
+# Cache
+cache/
+test_cache/
+
 # Jupyter notebooks (old experiments)
 1_Conv1D model/
 2_GRU model/

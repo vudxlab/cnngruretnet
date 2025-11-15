@@ -14,7 +14,7 @@ class Config:
     # ==================== DATA PATHS ====================
     DATA_DIR = "Data"
     MAT_FILE = "TH2_SETUP1.mat"
-    OUTPUT_DIR = "results"
+    OUTPUT_DIR = "results/10"
 
     # ==================== DATA EXTRACTION ====================
     # Slice parameters cho dữ liệu gốc

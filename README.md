@@ -101,7 +101,27 @@ python main.py --models conv1d_gru --sensor_idx 1
 python main.py --models conv1d_gru --output_steps 20 --epochs 1000 --batch_size 128
 ```
 
-### 4. Xem tất cả options
+### 4. Sử dụng Cache (Tiết kiệm thời gian)
+
+**Cache được bật mặc định** - Preprocessed data sẽ được lưu lại và tái sử dụng!
+
+```bash
+# Lần đầu: Preprocess và lưu cache (~30s)
+python main.py --models conv1d_gru
+
+# Lần sau: Load từ cache (~1s) - NHANH HƠN 30 LẦN!
+python main.py --models gru
+
+# Tắt cache (preprocess lại từ đầu)
+python main.py --models conv1d_gru --no_cache
+
+# Xóa tất cả cache trước khi chạy
+python main.py --models conv1d_gru --clear_cache
+```
+
+**Lưu ý:** Cache dựa trên `sensor_idx`, `output_steps`, `add_noise`, `input_steps`. Thay đổi bất kỳ tham số nào sẽ tạo cache mới.
+
+### 5. Xem tất cả options
 
 ```bash
 python main.py --help
