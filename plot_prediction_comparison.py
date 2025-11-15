@@ -144,6 +144,78 @@ def regenerate_predictions(results_dir, output_step, model):
         return None
 
 
+def regenerate_predictions_full(results_dir, output_step, model):
+    """
+    Re-generate predictions từ saved model cho TOÀN BỘ test set
+
+    Args:
+        results_dir: Thư mục chứa kết quả
+        output_step: Output step
+        model: Tên model
+
+    Returns:
+        tuple: (y_true, y_pred) toàn bộ test set hoặc None
+    """
+    import tensorflow as tf
+    from data_cache import DataCache
+    from config import Config
+    from data_loader import load_data
+    from data_preprocessing import DataPreprocessor
+
+    model_path = os.path.join(results_dir, str(output_step), model)
+
+    try:
+        # Load model
+        model_file = os.path.join(model_path, 'model_saved.keras')
+        if not os.path.exists(model_file):
+            return None
+
+        keras_model = tf.keras.models.load_model(model_file)
+
+        # Load data from cache hoặc tạo mới
+        cache = DataCache()
+        cache_key = cache.get_cache_key(
+            sensor_idx=0,
+            output_steps=output_step,
+            add_noise=True,
+            input_steps=50
+        )
+
+        if cache.cache_exists(cache_key):
+            data_dict = cache.load_cache(cache_key)
+        else:
+            # Tạo cache mới
+            mat_file = Config.get_mat_file_path()
+            raw_data = load_data(mat_file, sensor_idx=0)
+
+            preprocessor = DataPreprocessor(
+                input_steps=50,
+                output_steps=output_step,
+                add_noise=True
+            )
+
+            data_dict = preprocessor.prepare_data(raw_data)
+            cache.save_cache(data_dict, cache_key)
+
+        # Get TOÀN BỘ test data
+        X_test = data_dict['X_test']
+        y_test = data_dict['y_test']
+        preprocessor = data_dict['preprocessor']
+
+        # Predict toàn bộ
+        y_pred_scaled = keras_model.predict(X_test, verbose=0)
+
+        # Denormalize
+        y_true = preprocessor.inverse_transform(y_test)
+        y_pred = preprocessor.inverse_transform(y_pred_scaled)
+
+        return y_true, y_pred
+
+    except Exception as e:
+        print(f"  ❌ Lỗi regenerate full predictions: {e}")
+        return None
+
+
 def plot_comparison_by_output_step(results_dir, output_step, models, output_dir, num_samples=3):
     """
     Vẽ biểu đồ so sánh predictions của các models cho cùng output_step
@@ -184,6 +256,7 @@ def plot_comparison_by_output_step(results_dir, output_step, models, output_dir,
         axes = axes.reshape(-1, 1)
 
     colors = {'conv1d_gru': '#2ecc71', 'gru': '#3498db', 'conv1d': '#e74c3c'}
+    model_names = {'conv1d_gru': 'Conv1D-GRU-ResNet', 'gru': 'GRU', 'conv1d': 'Conv1D'}
 
     # Get y_true (same for all models)
     y_true_ref = list(predictions_data.values())[0]['y_true']
@@ -206,7 +279,8 @@ def plot_comparison_by_output_step(results_dir, output_step, models, output_dir,
             # Calculate error
             mae = np.mean(np.abs(y_true_sample - y_pred_sample))
 
-            ax.set_title(f'{model.upper().replace("_", "-")}\nSample {sample_idx+1} (MAE={mae:.6f})',
+            model_display_name = model_names.get(model, model.upper().replace("_", "-"))
+            ax.set_title(f'{model_display_name}\nSample {sample_idx+1} (MAE={mae:.6f})',
                         fontsize=11, fontweight='bold')
             ax.set_xlabel('Timestep', fontsize=10)
             ax.set_ylabel('Value', fontsize=10)
@@ -237,6 +311,7 @@ def plot_comparison_by_model(results_dir, model, output_steps, output_dir, num_s
         output_dir: Thư mục output
         num_samples: Số samples để vẽ
     """
+    model_names = {'conv1d_gru': 'Conv1D-GRU-ResNet', 'gru': 'GRU', 'conv1d': 'Conv1D'}
     print(f"\n📊 Đang vẽ comparison cho model={model}...")
 
     # Load predictions cho tất cả output_steps
@@ -291,7 +366,8 @@ def plot_comparison_by_model(results_dir, model, output_steps, output_dir, num_s
             ax.legend(fontsize=9, loc='best')
             ax.grid(True, alpha=0.3, linestyle='--')
 
-    plt.suptitle(f'Prediction Comparison - {model.upper().replace("_", "-")}',
+    model_display_name = model_names.get(model, model.upper().replace("_", "-"))
+    plt.suptitle(f'Prediction Comparison - {model_display_name}',
                 fontsize=14, fontweight='bold', y=1.00)
     plt.tight_layout()
 
@@ -304,40 +380,80 @@ def plot_comparison_by_model(results_dir, model, output_steps, output_dir, num_s
     print(f"  ✓ Đã lưu: {output_file}")
 
 
-def plot_overlay_comparison(results_dir, output_step, models, output_dir, num_samples=5):
+def plot_overlay_comparison(results_dir, output_step, models, output_dir, num_samples=10):
     """
     Vẽ biểu đồ overlay: Cả 3 models trên cùng một subplot
-    Format giống prediction_sample_1.png nhưng có 3 predictions overlay
+    Chọn 10 samples có MSE thấp nhất từ model Conv1D-GRU-ResNet
 
     Args:
         results_dir: Thư mục kết quả
         output_step: Output step cần so sánh
         models: Danh sách models
         output_dir: Thư mục output
-        num_samples: Số samples để vẽ
+        num_samples: Số samples để vẽ (default: 10)
     """
     print(f"\n📊 Đang vẽ overlay comparison cho output_step={output_step}...")
 
-    # Load predictions cho tất cả models
-    predictions_data = {}
+    # Load predictions cho tất cả models (toàn bộ test set để tìm best samples)
+    predictions_data_full = {}
 
     for model in models:
-        result = regenerate_predictions(results_dir, output_step, model)
+        result = regenerate_predictions_full(results_dir, output_step, model)
         if result is not None:
             y_true, y_pred = result
-            predictions_data[model] = {
+            predictions_data_full[model] = {
                 'y_true': y_true,
                 'y_pred': y_pred
             }
-            print(f"  ✓ Loaded {model}")
+            print(f"  ✓ Loaded {model}: {len(y_true)} samples")
 
-    if not predictions_data:
+    if not predictions_data_full:
         print(f"  ⚠️  Không có predictions cho output_step={output_step}")
         return
 
-    # Load past data (input) từ cache
+    # Tìm 10 samples có MSE thấp nhất từ Conv1D-GRU-ResNet
+    conv1d_gru_key = None
+    for key in predictions_data_full.keys():
+        if 'conv1d_gru' in key.lower():
+            conv1d_gru_key = key
+            break
+
+    if conv1d_gru_key is None:
+        print(f"  ⚠️  Không tìm thấy Conv1D-GRU-ResNet model")
+        # Fallback: use first num_samples
+        best_indices = list(range(min(num_samples, len(list(predictions_data_full.values())[0]['y_true']))))
+    else:
+        # Tính MSE cho từng sample
+        y_true = predictions_data_full[conv1d_gru_key]['y_true']
+        y_pred = predictions_data_full[conv1d_gru_key]['y_pred']
+
+        mse_per_sample = []
+        for i in range(len(y_true)):
+            mse = np.mean((y_true[i] - y_pred[i]) ** 2)
+            mse_per_sample.append((i, mse))
+
+        # Sort by MSE và lấy top num_samples
+        mse_per_sample.sort(key=lambda x: x[1])
+        best_indices = [idx for idx, _ in mse_per_sample[:num_samples]]
+
+        print(f"  ✓ Đã chọn {num_samples} samples tốt nhất (MSE thấp nhất)")
+        print(f"    Best MSE range: {mse_per_sample[0][1]:.6f} - {mse_per_sample[num_samples-1][1]:.6f}")
+
+    # Extract predictions cho best samples
+    predictions_data = {}
+    for model, data in predictions_data_full.items():
+        predictions_data[model] = {
+            'y_true': data['y_true'][best_indices],
+            'y_pred': data['y_pred'][best_indices]
+        }
+
+    # Load past data (input) từ cache cho best indices
     try:
         from data_cache import DataCache
+        from config import Config
+        from data_loader import load_data
+        from data_preprocessing import DataPreprocessor
+
         cache = DataCache()
         cache_key = cache.get_cache_key(
             sensor_idx=0,
@@ -345,25 +461,41 @@ def plot_overlay_comparison(results_dir, output_step, models, output_dir, num_sa
             add_noise=True,
             input_steps=50
         )
+
         if cache.cache_exists(cache_key):
             data_dict = cache.load_cache(cache_key)
-            X_test = data_dict['X_test']
-            preprocessor = data_dict['preprocessor']
-            # Denormalize past data
-            past_data_list = []
-            for i in range(min(num_samples, len(X_test))):
-                past_denorm = preprocessor.inverse_transform(X_test[i].reshape(1, -1))
-                past_data_list.append(past_denorm.flatten())
         else:
-            past_data_list = None
-    except:
+            # Tạo cache nếu chưa có
+            mat_file = Config.get_mat_file_path()
+            raw_data = load_data(mat_file, sensor_idx=0)
+            preprocessor = DataPreprocessor(input_steps=50, output_steps=output_step, add_noise=True)
+            data_dict = preprocessor.prepare_data(raw_data)
+            cache.save_cache(data_dict, cache_key)
+
+        X_test = data_dict['X_test']
+        preprocessor = data_dict['preprocessor']
+
+        # Denormalize past data cho best indices
+        past_data_list = []
+        for idx in best_indices:
+            past_denorm = preprocessor.inverse_transform(X_test[idx].reshape(1, -1))
+            past_data_list.append(past_denorm.flatten())
+    except Exception as e:
+        print(f"  ⚠️  Không load được past data: {e}")
         past_data_list = None
 
     # Colors cho từng model
     colors = {
-        'conv1d_gru': '#2ecc71',  # Xanh lá
-        'gru': '#3498db',          # Xanh dương
-        'conv1d': '#e74c3c'        # Đỏ
+        'conv1d_gru': '#2ecc71',  # Xanh lá - Conv1D-GRU-ResNet
+        'gru': '#3498db',          # Xanh dương - GRU
+        'conv1d': '#e74c3c'        # Đỏ - Conv1D
+    }
+
+    # Model name mapping
+    model_names = {
+        'conv1d_gru': 'Conv1D-GRU-ResNet',
+        'gru': 'GRU',
+        'conv1d': 'Conv1D'
     }
 
     # Tạo subplots (num_samples rows, 1 column)
@@ -397,8 +529,9 @@ def plot_overlay_comparison(results_dir, output_step, models, output_dir, num_sa
         for model, data in predictions_data.items():
             y_pred_sample = data['y_pred'][sample_idx]
 
+            model_display_name = model_names.get(model, model.upper().replace("_", "-"))
             ax.plot(future_timesteps, y_pred_sample, 's--', linewidth=2, markersize=5,
-                   label=f'Predicted ({model.upper().replace("_", "-")})',
+                   label=f'Predicted ({model_display_name})',
                    color=colors.get(model, '#95a5a6'), alpha=0.7)
 
         # Formatting
@@ -447,6 +580,7 @@ def plot_all_combinations_grid(results_dir, models, output_steps, output_dir, sa
         axes = axes.reshape(-1, 1)
 
     colors = {'conv1d_gru': '#2ecc71', 'gru': '#3498db', 'conv1d': '#e74c3c'}
+    model_names = {'conv1d_gru': 'Conv1D-GRU-ResNet', 'gru': 'GRU', 'conv1d': 'Conv1D'}
 
     for model_idx, model in enumerate(models):
         for step_idx, out_step in enumerate(output_steps):
@@ -476,8 +610,9 @@ def plot_all_combinations_grid(results_dir, models, output_steps, output_dir, sa
             mae = np.mean(np.abs(y_true_sample - y_pred_sample))
 
             # Title
+            model_display_name = model_names.get(model, model.upper().replace("_", "-"))
             if step_idx == 0:
-                title = f'{model.upper().replace("_", "-")}\nout={out_step}\nMAE={mae:.4f}'
+                title = f'{model_display_name}\nout={out_step}\nMAE={mae:.4f}'
             else:
                 title = f'out={out_step}\nMAE={mae:.4f}'
 

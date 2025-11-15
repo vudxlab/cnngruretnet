@@ -4,7 +4,7 @@ BÁO CÁO SO SÁNH MODELS VỚI CÁC OUTPUT_STEPS
 
 Tổng số models: 3
 Models: CONV1D, CONV1D_GRU, GRU
-Output steps: [5, 10, 15, 20]
+Output steps: [np.int64(5), np.int64(10), np.int64(15), np.int64(20)]
 Tổng số combinations: 12
 
 ====================================================================================================

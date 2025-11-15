@@ -187,6 +187,7 @@ def plot_metrics_vs_output_steps(metrics_df, output_dir):
 
     colors = {'conv1d_gru': '#2ecc71', 'gru': '#3498db', 'conv1d': '#e74c3c'}
     markers = {'conv1d_gru': 'o', 'gru': 's', 'conv1d': '^'}
+    model_names = {'conv1d_gru': 'Conv1D-GRU-ResNet', 'gru': 'GRU', 'conv1d': 'Conv1D'}
 
     for idx, (metric, title, note) in enumerate(metrics_to_plot):
         ax = axes[idx]
@@ -195,13 +196,14 @@ def plot_metrics_vs_output_steps(metrics_df, output_dir):
         for model in sorted(test_df['model'].unique()):
             model_data = test_df[test_df['model'] == model].sort_values('output_step')
 
+            model_display_name = model_names.get(model, model.upper().replace('_', '-'))
             ax.plot(
                 model_data['output_step'],
                 model_data[metric],
                 marker=markers.get(model, 'o'),
                 linewidth=2.5,
                 markersize=10,
-                label=model.upper().replace('_', '-'),
+                label=model_display_name,
                 color=colors.get(model, '#95a5a6')
             )
 
@@ -426,6 +428,140 @@ def generate_summary_report(metrics_df, output_dir):
     print("\n" + '\n'.join(report))
 
 
+def plot_training_curves_comparison(results_dir, output_dir):
+    """
+    Vẽ biểu đồ so sánh training curves (loss) của 3 models cho mỗi output_step
+
+    Args:
+        results_dir: Thư mục chứa kết quả
+        output_dir: Thư mục output
+    """
+    import pickle
+
+    print(f"\n📈 Đang tạo training curves comparison...")
+
+    # Detect models và output_steps
+    models = []
+    output_steps = []
+
+    for folder in os.listdir(results_dir):
+        folder_path = os.path.join(results_dir, folder)
+        if not os.path.isdir(folder_path):
+            continue
+
+        try:
+            out_step = int(folder)
+            output_steps.append(out_step)
+
+            for model_folder in os.listdir(folder_path):
+                if os.path.isdir(os.path.join(folder_path, model_folder)):
+                    if model_folder not in models:
+                        models.append(model_folder)
+        except ValueError:
+            continue
+
+    models = sorted(models)
+    output_steps = sorted(output_steps)
+
+    if not models or not output_steps:
+        print("\n⚠️  Không tìm thấy dữ liệu!")
+        return
+
+    # Colors cho từng model
+    colors = {
+        'conv1d_gru': '#2ecc71',  # Xanh lá - Conv1D-GRU-ResNet
+        'gru': '#3498db',          # Xanh dương - GRU
+        'conv1d': '#e74c3c'        # Đỏ - Conv1D
+    }
+
+    # Model name mapping
+    model_names = {
+        'conv1d_gru': 'Conv1D-GRU-ResNet',
+        'gru': 'GRU',
+        'conv1d': 'Conv1D'
+    }
+
+    # Tạo folder output
+    curves_dir = os.path.join(output_dir, 'training_curves')
+    os.makedirs(curves_dir, exist_ok=True)
+
+    # Vẽ cho từng output_step
+    for out_step in output_steps:
+        print(f"\n  📊 Output step = {out_step}")
+
+        # Load history cho tất cả models
+        histories = {}
+
+        for model in models:
+            history_file = os.path.join(results_dir, str(out_step), model, 'history_saved.pkl')
+
+            if not os.path.exists(history_file):
+                print(f"    ⚠️  Không tìm thấy history: {model}")
+                continue
+
+            try:
+                with open(history_file, 'rb') as f:
+                    history = pickle.load(f)
+                histories[model] = history
+                print(f"    ✓ Loaded {model}: {len(history.get('loss', []))} epochs")
+            except Exception as e:
+                print(f"    ❌ Lỗi load {model}: {e}")
+
+        if not histories:
+            print(f"    ⚠️  Không có history nào cho output_step={out_step}")
+            continue
+
+        # Vẽ biểu đồ (2 subplots: Train Loss & Val Loss)
+        fig, axes = plt.subplots(1, 2, figsize=(16, 6))
+
+        # Subplot 1: Training Loss
+        ax1 = axes[0]
+        for model, history in histories.items():
+            if 'loss' in history:
+                epochs = range(1, len(history['loss']) + 1)
+                model_display_name = model_names.get(model, model.upper().replace('_', '-'))
+                ax1.plot(epochs, history['loss'],
+                        linewidth=2, label=model_display_name,
+                        color=colors.get(model, '#95a5a6'), alpha=0.8)
+
+        ax1.set_xlabel('Epoch', fontsize=12, fontweight='bold')
+        ax1.set_ylabel('Loss', fontsize=12, fontweight='bold')
+        ax1.set_title(f'Training Loss - Output Steps = {out_step}',
+                     fontsize=14, fontweight='bold', pad=15)
+        ax1.legend(fontsize=11, loc='best')
+        ax1.grid(True, alpha=0.3, linestyle='--')
+        ax1.set_yscale('log')  # Log scale cho loss
+
+        # Subplot 2: Validation Loss
+        ax2 = axes[1]
+        for model, history in histories.items():
+            if 'val_loss' in history:
+                epochs = range(1, len(history['val_loss']) + 1)
+                model_display_name = model_names.get(model, model.upper().replace('_', '-'))
+                ax2.plot(epochs, history['val_loss'],
+                        linewidth=2, label=model_display_name,
+                        color=colors.get(model, '#95a5a6'), alpha=0.8)
+
+        ax2.set_xlabel('Epoch', fontsize=12, fontweight='bold')
+        ax2.set_ylabel('Validation Loss', fontsize=12, fontweight='bold')
+        ax2.set_title(f'Validation Loss - Output Steps = {out_step}',
+                     fontsize=14, fontweight='bold', pad=15)
+        ax2.legend(fontsize=11, loc='best')
+        ax2.grid(True, alpha=0.3, linestyle='--')
+        ax2.set_yscale('log')  # Log scale cho loss
+
+        plt.tight_layout()
+
+        # Save
+        output_file = os.path.join(curves_dir, f'training_curves_out{out_step}.png')
+        plt.savefig(output_file, dpi=300, bbox_inches='tight')
+        plt.close()
+
+        print(f"    ✓ Đã lưu: {output_file}")
+
+    print(f"\n✓ Training curves comparison đã lưu tại: {curves_dir}/")
+
+
 def generate_prediction_comparisons(results_dir, output_dir, num_samples=5):
     """
     Tạo prediction comparison visualizations
@@ -540,6 +676,9 @@ def main():
     find_best_configurations(metrics_df, args.output_dir)
     generate_summary_report(metrics_df, args.output_dir)
 
+    # Tạo training curves comparison
+    plot_training_curves_comparison(args.results_dir, args.output_dir)
+
     # Tạo prediction comparisons nếu được yêu cầu
     if args.plot_predictions:
         generate_prediction_comparisons(args.results_dir, args.output_dir,
@@ -555,6 +694,8 @@ def main():
     print("  ✓ heatmaps.png                # Heatmaps cho các metrics")
     print("  ✓ best_configurations.csv     # Các cấu hình tốt nhất")
     print("  ✓ summary_report.txt          # Báo cáo tổng hợp")
+    print("\n  📈 Training Curves:")
+    print("  ✓ training_curves/training_curves_out*.png  # So sánh loss curves của 3 models")
 
     if args.plot_predictions:
         print("\n  📊 Prediction Comparisons:")
