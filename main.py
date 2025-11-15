@@ -35,6 +35,9 @@ Ví dụ sử dụng:
   # Train nhiều models
   python main.py --models conv1d_gru gru conv1d
 
+  # Train với output_steps khác (dự đoán 10 timesteps)
+  python main.py --models conv1d_gru --output_steps 10
+
   # Train tất cả deep learning models
   python main.py --models conv1d_gru gru conv1d --epochs 500
 
@@ -48,6 +51,9 @@ Ví dụ sử dụng:
                        help="Đường dẫn file .mat (mặc định: lấy từ Config)")
     parser.add_argument("--sensor_idx", type=int, default=Config.SENSOR_IDX,
                        help="Index sensor (0-7)")
+    parser.add_argument("--output_steps", type=int, default=Config.OUTPUT_STEPS,
+                       choices=[5, 10, 15, 20, 30, 40],
+                       help="Số timesteps dự đoán (output) - Mặc định: 5")
 
     # Model parameters - ĐÃ ĐỔI TỪ model_type SANG models
     parser.add_argument("--models", type=str, nargs='+', default=['conv1d_gru'],
@@ -245,6 +251,7 @@ def main():
 
     # Update Config từ args (global settings)
     Config.SENSOR_IDX = args.sensor_idx
+    Config.OUTPUT_STEPS = args.output_steps
     Config.EPOCHS = args.epochs
     Config.BATCH_SIZE = args.batch_size
     Config.EARLY_STOPPING_PATIENCE = args.patience
@@ -256,6 +263,7 @@ def main():
     print_separator(width=70)
 
     print(f"\nModels to train: {', '.join(args.models)}")
+    print(f"Output steps (dự đoán): {args.output_steps} timesteps")
     print(f"Base output directory: {args.output_dir}")
 
     # Set random seed

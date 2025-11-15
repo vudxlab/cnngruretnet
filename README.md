@@ -84,6 +84,10 @@ Script này sẽ train tất cả 6 models tuần tự và hiển thị summary 
 # Tùy chỉnh epochs, batch size
 python main.py --models conv1d_gru gru --epochs 500 --batch_size 32
 
+# Thay đổi số timesteps dự đoán (output_steps)
+python main.py --models conv1d_gru --output_steps 10
+# Choices: 5 (mặc định), 10, 15, 20, 30, 40
+
 # Train không có noise
 python main.py --models conv1d_gru --no_noise
 
@@ -92,6 +96,9 @@ python main.py --models conv1d_gru --output_dir my_results
 
 # Train với sensor khác
 python main.py --models conv1d_gru --sensor_idx 1
+
+# Kết hợp nhiều tham số
+python main.py --models conv1d_gru --output_steps 20 --epochs 1000 --batch_size 128
 ```
 
 ### 4. Xem tất cả options

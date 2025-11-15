@@ -59,6 +59,10 @@ python main.py --models conv1d_gru --output_dir my_results
 # Train với sensor khác (0-7)
 python main.py --models conv1d_gru --sensor_idx 1
 
+# Thay đổi số timesteps dự đoán (output_steps)
+python main.py --models conv1d_gru --output_steps 10
+# Lựa chọn: 5 (mặc định), 10, 15, 20, 30, 40
+
 # Thay đổi patience cho early stopping
 python main.py --models conv1d_gru --patience 20
 
@@ -67,6 +71,7 @@ python main.py --models conv1d_gru gru \
     --epochs 500 \
     --batch_size 32 \
     --patience 15 \
+    --output_steps 20 \
     --output_dir custom_results
 ```
 
@@ -119,7 +124,17 @@ python main.py --models conv1d_gru gru conv1d --epochs 1000
 python main.py --models conv1d_gru gru conv1d linear xgboost lightgbm
 ```
 
-### Ví dụ 4: Train với cấu hình tùy chỉnh
+### Ví dụ 4: Dự đoán xa hơn với output_steps=20
+
+```bash
+python main.py \
+    --models conv1d_gru \
+    --output_steps 20 \
+    --epochs 1000 \
+    --output_dir results/predict_20steps
+```
+
+### Ví dụ 5: Train với cấu hình tùy chỉnh đầy đủ
 
 ```bash
 python main.py \
@@ -127,6 +142,7 @@ python main.py \
     --epochs 2000 \
     --batch_size 128 \
     --patience 20 \
+    --output_steps 15 \
     --no_noise \
     --sensor_idx 0 \
     --output_dir experiments/exp001

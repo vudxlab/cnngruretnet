@@ -101,6 +101,17 @@ python main.py --models conv1d_gru --output_dir my_experiments
 python main.py --models conv1d_gru --sensor_idx 1
 ```
 
+### Thay đổi số timesteps dự đoán (output_steps):
+```bash
+# Dự đoán 10 timesteps thay vì 5 (default)
+python main.py --models conv1d_gru --output_steps 10
+
+# Dự đoán 20 timesteps
+python main.py --models conv1d_gru --output_steps 20
+
+# Lựa chọn: 5 (default), 10, 15, 20, 30, 40
+```
+
 ## Kết quả
 
 Mỗi model lưu vào: `results/{model_name}/`
