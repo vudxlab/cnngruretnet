@@ -96,9 +96,12 @@ Best MAE,gru,10,0.000950,0.001345,0.000950
 ### 6. `predictions_comparison/` - Prediction comparisons (nếu dùng --plot_predictions)
 
 Folder chứa biểu đồ so sánh predictions:
-- `comparison_out{5,10,15,20,30,40}.png` - So sánh models cho mỗi output_step
-- `comparison_{model}.png` - So sánh output_steps cho mỗi model
-- `grid_sample{0,1,2}.png` - Grid tổng quan tất cả combinations
+- ⭐ `overlay_out{5,10,15,20,30,40}.png` - **Overlay 3 models (KHUYÊN XEM!)**
+- `comparison_out{5,10,15,20,30,40}.png` - So sánh models (3 subplots)
+- `comparison_{model}.png` - So sánh output_steps theo model
+- `grid_sample{0,1,2}.png` - Grid tổng quan
+
+**Format overlay:** Giống `prediction_sample_1.png` nhưng có CẢ 3 predictions overlay trên cùng subplot!
 
 **Xem chi tiết:** `PREDICTION_COMPARISON_GUIDE.md`
 

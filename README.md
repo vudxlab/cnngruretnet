@@ -197,9 +197,12 @@ python analyze_existing_results.py --plot_predictions --num_samples 3
 ```
 
 Tạo thêm:
-- `predictions_comparison/comparison_out*.png` - So sánh models theo output_step
+- ⭐ `predictions_comparison/overlay_out*.png` - **Overlay 3 models (KHUYÊN XEM)**
+- `predictions_comparison/comparison_out*.png` - So sánh models (3 subplots)
 - `predictions_comparison/comparison_*.png` - So sánh output_steps theo model
 - `predictions_comparison/grid_sample*.png` - Grid tổng quan
+
+**Overlay plots:** Format giống `prediction_sample_1.png` với Past Data + Actual + CẢ 3 predictions overlay!
 
 **Xem chi tiết:**
 - `QUICK_COMPARISON.md` - Hướng dẫn nhanh

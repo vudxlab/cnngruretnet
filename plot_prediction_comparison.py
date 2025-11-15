@@ -304,6 +304,125 @@ def plot_comparison_by_model(results_dir, model, output_steps, output_dir, num_s
     print(f"  ✓ Đã lưu: {output_file}")
 
 
+def plot_overlay_comparison(results_dir, output_step, models, output_dir, num_samples=5):
+    """
+    Vẽ biểu đồ overlay: Cả 3 models trên cùng một subplot
+    Format giống prediction_sample_1.png nhưng có 3 predictions overlay
+
+    Args:
+        results_dir: Thư mục kết quả
+        output_step: Output step cần so sánh
+        models: Danh sách models
+        output_dir: Thư mục output
+        num_samples: Số samples để vẽ
+    """
+    print(f"\n📊 Đang vẽ overlay comparison cho output_step={output_step}...")
+
+    # Load predictions cho tất cả models
+    predictions_data = {}
+
+    for model in models:
+        result = regenerate_predictions(results_dir, output_step, model)
+        if result is not None:
+            y_true, y_pred = result
+            predictions_data[model] = {
+                'y_true': y_true,
+                'y_pred': y_pred
+            }
+            print(f"  ✓ Loaded {model}")
+
+    if not predictions_data:
+        print(f"  ⚠️  Không có predictions cho output_step={output_step}")
+        return
+
+    # Load past data (input) từ cache
+    try:
+        from data_cache import DataCache
+        cache = DataCache()
+        cache_key = cache.get_cache_key(
+            sensor_idx=0,
+            output_steps=output_step,
+            add_noise=True,
+            input_steps=50
+        )
+        if cache.cache_exists(cache_key):
+            data_dict = cache.load_cache(cache_key)
+            X_test = data_dict['X_test']
+            preprocessor = data_dict['preprocessor']
+            # Denormalize past data
+            past_data_list = []
+            for i in range(min(num_samples, len(X_test))):
+                past_denorm = preprocessor.inverse_transform(X_test[i].reshape(1, -1))
+                past_data_list.append(past_denorm.flatten())
+        else:
+            past_data_list = None
+    except:
+        past_data_list = None
+
+    # Colors cho từng model
+    colors = {
+        'conv1d_gru': '#2ecc71',  # Xanh lá
+        'gru': '#3498db',          # Xanh dương
+        'conv1d': '#e74c3c'        # Đỏ
+    }
+
+    # Tạo subplots (num_samples rows, 1 column)
+    fig, axes = plt.subplots(num_samples, 1, figsize=(14, 4*num_samples))
+
+    if num_samples == 1:
+        axes = [axes]
+
+    # Get y_true reference (same for all models)
+    y_true_ref = list(predictions_data.values())[0]['y_true']
+
+    for sample_idx in range(num_samples):
+        ax = axes[sample_idx]
+
+        # Plot past data nếu có
+        if past_data_list is not None and sample_idx < len(past_data_list):
+            past_data = past_data_list[sample_idx]
+            past_timesteps = range(len(past_data))
+            ax.plot(past_timesteps, past_data, 'o-', linewidth=2, markersize=4,
+                   label='Past Data (Input)', color='green', alpha=0.6)
+
+        # Plot actual future
+        y_true_sample = y_true_ref[sample_idx]
+        future_start = len(past_data_list[sample_idx]) if past_data_list else 0
+        future_timesteps = range(future_start, future_start + len(y_true_sample))
+
+        ax.plot(future_timesteps, y_true_sample, 'o-', linewidth=2.5, markersize=6,
+               label='Actual Future', color='blue', alpha=0.8, zorder=10)
+
+        # Plot predictions từ tất cả models
+        for model, data in predictions_data.items():
+            y_pred_sample = data['y_pred'][sample_idx]
+
+            ax.plot(future_timesteps, y_pred_sample, 's--', linewidth=2, markersize=5,
+                   label=f'Predicted ({model.upper().replace("_", "-")})',
+                   color=colors.get(model, '#95a5a6'), alpha=0.7)
+
+        # Formatting
+        ax.set_xlabel('Time Step', fontsize=11, fontweight='bold')
+        ax.set_ylabel('Value', fontsize=11, fontweight='bold')
+        ax.set_title(f'Sample {sample_idx+1} - Output Steps = {output_step}',
+                    fontsize=12, fontweight='bold')
+        ax.legend(fontsize=10, loc='best', framealpha=0.9)
+        ax.grid(True, alpha=0.3, linestyle='--')
+        ax.axhline(y=0, color='gray', linestyle='--', linewidth=0.5, alpha=0.5)
+
+    plt.suptitle(f'Prediction Comparison (Overlay) - Output Steps = {output_step}',
+                fontsize=14, fontweight='bold', y=0.995)
+    plt.tight_layout()
+
+    # Save
+    os.makedirs(os.path.join(output_dir, 'predictions_comparison'), exist_ok=True)
+    output_file = os.path.join(output_dir, 'predictions_comparison', f'overlay_out{output_step}.png')
+    plt.savefig(output_file, dpi=300, bbox_inches='tight')
+    plt.close()
+
+    print(f"  ✓ Đã lưu: {output_file}")
+
+
 def plot_all_combinations_grid(results_dir, models, output_steps, output_dir, sample_idx=0):
     """
     Vẽ grid tổng quan tất cả combinations (models × output_steps)
@@ -442,20 +561,26 @@ def main():
     print("  ĐANG TẠO VISUALIZATIONS")
     print("=" * 100)
 
-    # 1. Comparison by output_step (so sánh models cho mỗi output_step)
-    print("\n1. Comparison by Output Step:")
+    # 1. Overlay comparison (CẢ 3 models trên cùng subplot - KHUYÊN DÙNG)
+    print("\n1. Overlay Comparison (3 models on same plot):")
+    for out_step in output_steps:
+        plot_overlay_comparison(args.results_dir, out_step, models,
+                               args.output_dir, num_samples=args.num_samples)
+
+    # 2. Comparison by output_step (so sánh models cho mỗi output_step - 3 subplots)
+    print("\n2. Comparison by Output Step (separate subplots):")
     for out_step in output_steps:
         plot_comparison_by_output_step(args.results_dir, out_step, models,
                                       args.output_dir, num_samples=args.num_samples)
 
-    # 2. Comparison by model (so sánh output_steps cho mỗi model)
-    print("\n2. Comparison by Model:")
+    # 3. Comparison by model (so sánh output_steps cho mỗi model)
+    print("\n3. Comparison by Model:")
     for model in models:
         plot_comparison_by_model(args.results_dir, model, output_steps,
                                 args.output_dir, num_samples=args.num_samples)
 
-    # 3. Grid tổng quan
-    print("\n3. Overview Grid:")
+    # 4. Grid tổng quan
+    print("\n4. Overview Grid:")
     for sample_idx in range(min(3, args.num_samples)):
         plot_all_combinations_grid(args.results_dir, models, output_steps,
                                    args.output_dir, sample_idx=sample_idx)
@@ -465,8 +590,9 @@ def main():
     print("=" * 100)
     print(f"\n📁 Kết quả lưu tại: {args.output_dir}/predictions_comparison/")
     print("\nCác files đã tạo:")
-    print("  - comparison_out{5,10,15,20,30,40}.png  # So sánh models cho mỗi output_step")
-    print("  - comparison_{model}.png                 # So sánh output_steps cho mỗi model")
+    print("  🌟 overlay_out{5,10,15,20,30,40}.png     # Overlay 3 models (KHUYÊN XEM)")
+    print("  - comparison_out{5,10,15,20,30,40}.png  # So sánh models (3 subplots)")
+    print("  - comparison_{model}.png                 # So sánh output_steps theo model")
     print("  - grid_sample{0,1,2}.png                 # Grid tổng quan")
     print("=" * 100)
 

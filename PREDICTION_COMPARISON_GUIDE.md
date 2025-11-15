@@ -47,9 +47,45 @@ python plot_prediction_comparison.py \
 
 ## 📊 Các biểu đồ được tạo
 
-Script tạo 3 loại visualization trong folder `analysis/predictions_comparison/`:
+Script tạo 4 loại visualization trong folder `analysis/predictions_comparison/`:
 
-### 1. Comparison by Output Step
+### 1. **Overlay Comparison** (⭐ KHUYÊN XEM)
+
+**Files:** `overlay_out5.png`, `overlay_out10.png`, ..., `overlay_out40.png`
+
+**Mục đích:** So sánh CẢ 3 models trên cùng một subplot - Dễ so sánh trực tiếp!
+
+**Format:**
+- Past Data (Input) - 50 timesteps - màu xanh lá
+- Actual Future - màu xanh dương
+- Predicted (Conv1D-GRU) - màu xanh lá
+- Predicted (GRU) - màu xanh dương
+- Predicted (Conv1D) - màu đỏ
+
+**Layout:**
+```
+Sample 1: [Past Data ══════════════════] [Actual ●●●●● + Pred1 ■■■■■ + Pred2 ▲▲▲▲▲ + Pred3 ◆◆◆◆◆]
+Sample 2: [Past Data ══════════════════] [Actual ●●●●● + Pred1 ■■■■■ + Pred2 ▲▲▲▲▲ + Pred3 ◆◆◆◆◆]
+Sample 3: [Past Data ══════════════════] [Actual ●●●●● + Pred1 ■■■■■ + Pred2 ▲▲▲▲▲ + Pred3 ◆◆◆◆◆]
+```
+
+**Insight:**
+- So sánh trực tiếp 3 models trên cùng một biểu đồ
+- Dễ nhìn model nào fit actual tốt nhất
+- Format giống `prediction_sample_1.png` nhưng có 3 predictions overlay
+
+**Ví dụ:**
+```
+Output Steps = 5
+- Past Data: 50 points (xanh lá)
+- Actual: 5 points (xanh dương đậm)
+- Conv1D-GRU prediction: 5 points (xanh lá, gần actual nhất!)
+- GRU prediction: 5 points (xanh dương, gần actual)
+- Conv1D prediction: 5 points (đỏ, xa actual)
+→ Dễ thấy Conv1D-GRU tốt nhất!
+```
+
+### 2. Comparison by Output Step (Separate Subplots)
 
 **Files:** `comparison_out5.png`, `comparison_out10.png`, ..., `comparison_out40.png`
 
@@ -76,7 +112,7 @@ Output Steps = 5
 - Conv1D: MAE = 0.001634 (kém nhất)
 ```
 
-### 2. Comparison by Model
+### 3. Comparison by Model
 
 **Files:** `comparison_conv1d_gru.png`, `comparison_gru.png`, `comparison_conv1d.png`
 
@@ -104,7 +140,7 @@ Conv1D-GRU:
 - out=40: MAE = 0.001567 (degraded nhưng vẫn dùng được)
 ```
 
-### 3. Grid Overview
+### 4. Grid Overview
 
 **Files:** `grid_sample0.png`, `grid_sample1.png`, `grid_sample2.png`
 
@@ -156,13 +192,14 @@ python analyze_existing_results.py --plot_predictions
 # Vừa có metrics vừa có predictions!
 ```
 
-### Use Case 2: Tìm best model
+### Use Case 2: Tìm best model (NHANH NHẤT)
 
 ```bash
 # Vẽ comparison
 python analyze_existing_results.py --plot_predictions
 
-# Xem file comparison_out5.png
+# Xem file overlay_out5.png (KHUYÊN DÙNG!)
+# Cả 3 models trên cùng biểu đồ → Dễ so sánh!
 # Model nào có predictions fit nhất? → Chọn model đó
 ```
 
@@ -172,10 +209,11 @@ python analyze_existing_results.py --plot_predictions
 # Đã xem metrics trong analysis/comparison_table.csv
 # Giờ validate bằng visual
 
-# Xem prediction plots
-open analysis/predictions_comparison/comparison_out5.png
+# Xem overlay plots (NHANH NHẤT)
+open analysis/predictions_comparison/overlay_out5.png
 
 # Metrics có match với visual quality không?
+# Overlay plots cho thấy sự khác biệt rõ ràng hơn!
 ```
 
 ### Use Case 4: Chọn output_step phù hợp
@@ -301,8 +339,12 @@ pip install tensorflow>=2.13.0
 ```
 analysis/
 └── predictions_comparison/
-    ├── comparison_out5.png          # Models comparison for out=5
-    ├── comparison_out10.png          # Models comparison for out=10
+    ├── overlay_out5.png              # ⭐ Overlay 3 models (out=5) - KHUYÊN XEM
+    ├── overlay_out10.png             # ⭐ Overlay 3 models (out=10)
+    ├── ...
+    ├── overlay_out40.png             # ⭐ Overlay 3 models (out=40)
+    ├── comparison_out5.png           # Models comparison (3 subplots, out=5)
+    ├── comparison_out10.png          # Models comparison (3 subplots, out=10)
     ├── ...
     ├── comparison_out40.png
     ├── comparison_conv1d_gru.png     # Output_steps comparison for Conv1D-GRU
@@ -322,9 +364,9 @@ conda activate tf && python analyze_existing_results.py --plot_predictions
 # Cách 2: Standalone
 conda activate tf && python plot_prediction_comparison.py
 
-# Xem kết quả
+# Xem kết quả (KHUYÊN XEM OVERLAY TRƯỚC!)
+open analysis/predictions_comparison/overlay_out5.png      # ⭐ Overlay - Dễ so sánh nhất
 open analysis/predictions_comparison/grid_sample0.png
-open analysis/predictions_comparison/comparison_out5.png
 open analysis/predictions_comparison/comparison_conv1d_gru.png
 ```
 

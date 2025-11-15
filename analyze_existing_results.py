@@ -438,6 +438,7 @@ def generate_prediction_comparisons(results_dir, output_dir, num_samples=5):
     # Import here to avoid dependency if not needed
     try:
         from plot_prediction_comparison import (
+            plot_overlay_comparison,
             plot_comparison_by_output_step,
             plot_comparison_by_model,
             plot_all_combinations_grid
@@ -481,20 +482,26 @@ def generate_prediction_comparisons(results_dir, output_dir, num_samples=5):
         print("\n⚠️  Không tìm thấy dữ liệu cho predictions!")
         return
 
-    # 1. Comparison by output_step
-    print("\n1️⃣  Comparison by Output Step:")
+    # 1. Overlay comparison (CẢ 3 models trên cùng subplot - KHUYÊN DÙNG)
+    print("\n1️⃣  Overlay Comparison (3 models on same plot - RECOMMENDED):")
+    for out_step in output_steps:
+        plot_overlay_comparison(results_dir, out_step, models,
+                               output_dir, num_samples=num_samples)
+
+    # 2. Comparison by output_step (separate subplots)
+    print("\n2️⃣  Comparison by Output Step (separate subplots):")
     for out_step in output_steps:
         plot_comparison_by_output_step(results_dir, out_step, models,
                                       output_dir, num_samples=num_samples)
 
-    # 2. Comparison by model
-    print("\n2️⃣  Comparison by Model:")
+    # 3. Comparison by model
+    print("\n3️⃣  Comparison by Model:")
     for model in models:
         plot_comparison_by_model(results_dir, model, output_steps,
                                 output_dir, num_samples=num_samples)
 
-    # 3. Grid overview
-    print("\n3️⃣  Overview Grid:")
+    # 4. Grid overview
+    print("\n4️⃣  Overview Grid:")
     for sample_idx in range(min(3, num_samples)):
         plot_all_combinations_grid(results_dir, models, output_steps,
                                    output_dir, sample_idx=sample_idx)
@@ -551,9 +558,10 @@ def main():
 
     if args.plot_predictions:
         print("\n  📊 Prediction Comparisons:")
-        print("  ✓ predictions_comparison/comparison_out*.png  # So sánh models theo output_step")
-        print("  ✓ predictions_comparison/comparison_*.png     # So sánh output_steps theo model")
-        print("  ✓ predictions_comparison/grid_sample*.png     # Grid tổng quan")
+        print("  🌟 predictions_comparison/overlay_out*.png        # Overlay 3 models (KHUYÊN XEM)")
+        print("  ✓ predictions_comparison/comparison_out*.png     # So sánh models (3 subplots)")
+        print("  ✓ predictions_comparison/comparison_{model}.png  # So sánh output_steps theo model")
+        print("  ✓ predictions_comparison/grid_sample*.png        # Grid tổng quan")
 
     print("=" * 100)
 
