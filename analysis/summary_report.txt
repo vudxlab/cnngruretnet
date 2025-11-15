@@ -4,8 +4,8 @@ BÁO CÁO SO SÁNH MODELS VỚI CÁC OUTPUT_STEPS
 
 Tổng số models: 3
 Models: CONV1D, CONV1D_GRU, GRU
-Output steps: [5, 10, 15]
-Tổng số combinations: 8
+Output steps: [5, 10, 15, 20]
+Tổng số combinations: 12
 
 ====================================================================================================
 PERFORMANCE SUMMARY BY MODEL (Test Set)
@@ -13,28 +13,28 @@ PERFORMANCE SUMMARY BY MODEL (Test Set)
 
 
 CONV1D:
-    R² Range: 0.690467 → 0.799909
-    RMSE Range: 0.003029 → 0.003777
-    MAE Range: 0.001969 → 0.002406
-    Best output_step: 5 (R²=0.799909, RMSE=0.003029)
-    Worst output_step: 15 (R²=0.690467, RMSE=0.003777)
-    Performance degradation: 13.68%
+    R² Range: 0.657227 → 0.748929
+    RMSE Range: 0.003396 → 0.003974
+    MAE Range: 0.002163 → 0.002564
+    Best output_step: 10 (R²=0.748929, RMSE=0.003396)
+    Worst output_step: 20 (R²=0.657227, RMSE=0.003974)
+    Performance degradation: 12.24%
 
 CONV1D-GRU:
-    R² Range: 0.767392 → 0.815698
-    RMSE Range: 0.002909 → 0.003266
-    MAE Range: 0.001912 → 0.002087
+    R² Range: 0.766904 → 0.815698
+    RMSE Range: 0.002909 → 0.003269
+    MAE Range: 0.001912 → 0.002099
     Best output_step: 10 (R²=0.815698, RMSE=0.002909)
-    Worst output_step: 5 (R²=0.767392, RMSE=0.003266)
-    Performance degradation: 5.92%
+    Worst output_step: 5 (R²=0.766904, RMSE=0.003269)
+    Performance degradation: 5.98%
 
 GRU:
-    R² Range: 0.713794 → 0.761085
-    RMSE Range: 0.003310 → 0.003626
-    MAE Range: 0.002125 → 0.002276
-    Best output_step: 5 (R²=0.761085, RMSE=0.003310)
-    Worst output_step: 10 (R²=0.713794, RMSE=0.003626)
-    Performance degradation: 6.21%
+    R² Range: 0.711288 → 0.773366
+    RMSE Range: 0.003224 → 0.003647
+    MAE Range: 0.002061 → 0.002359
+    Best output_step: 5 (R²=0.773366, RMSE=0.003224)
+    Worst output_step: 20 (R²=0.711288, RMSE=0.003647)
+    Performance degradation: 8.03%
 
 ====================================================================================================
 IMPACT OF OUTPUT_STEPS ON AVERAGE PERFORMANCE
@@ -42,10 +42,10 @@ IMPACT OF OUTPUT_STEPS ON AVERAGE PERFORMANCE
 
 
 Output Steps = 5:
-    Average R²: 0.776129 ± 0.020834
-    Average RMSE: 0.003202 ± 0.000151
-    Average MAE: 0.002060 ± 0.000082
-    Best model: CONV1D (R²=0.799909)
+    Average R²: 0.750776 ± 0.033687
+    Average RMSE: 0.003376 ± 0.000225
+    Average MAE: 0.002163 ± 0.000145
+    Best model: GRU (R²=0.773366)
 
 Output Steps = 10:
     Average R²: 0.759474 ± 0.051764
@@ -54,9 +54,15 @@ Output Steps = 10:
     Best model: CONV1D_GRU (R²=0.815698)
 
 Output Steps = 15:
-    Average R²: 0.749476 ± 0.083451
-    Average RMSE: 0.003374 ± 0.000570
-    Average MAE: 0.002183 ± 0.000316
-    Best model: CONV1D_GRU (R²=0.808485)
+    Average R²: 0.747811 ± 0.031867
+    Average RMSE: 0.003401 ± 0.000219
+    Average MAE: 0.002201 ± 0.000132
+    Best model: CONV1D_GRU (R²=0.783724)
+
+Output Steps = 20:
+    Average R²: 0.719049 ± 0.066045
+    Average RMSE: 0.003581 ± 0.000431
+    Average MAE: 0.002328 ± 0.000253
+    Best model: CONV1D_GRU (R²=0.788631)
 
 ====================================================================================================
