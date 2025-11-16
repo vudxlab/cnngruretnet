@@ -93,13 +93,7 @@ class Conv1DGRUModel:
             name='gru_3'
         )(x)
 
-        # Flatten và Dense layers
-        from tensorflow.keras.layers import Flatten
-        x = Flatten()(x)
-        x = Dense(128, activation='relu')(x)
-        x = Dense(64, activation='linear')(x)
-
-        # Output layer
+        # Output layer (trực tiếp từ GRU, không cần Dense layers trung gian)
         output_layer = Dense(units=self.output_steps, name='output')(x)
 
         # Build model
