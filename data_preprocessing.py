@@ -453,13 +453,36 @@ def preprocess_data(data_sensor, add_noise=None):
     train_data, val_data, test_data = preprocessor.split_data_temporally(data_sensor)
 
     # 2. Data Augmentation CHỈ ÁP DỤNG cho TRAIN data
-    if add_noise:
+    if add_noise or len(Config.AUGMENTATION_STRATEGIES) > 0:
         print("\n[2/6] Data Augmentation (CHỈ trên TRAIN data)...")
-        noisy_train_data = preprocessor.add_noise(train_data)
-        train_data_augmented = np.concatenate([train_data, noisy_train_data])
-        print(f"  Train gốc: {train_data.shape}")
-        print(f"  Train noisy: {noisy_train_data.shape}")
-        print(f"  Train augmented: {train_data_augmented.shape}")
+
+        # Sử dụng apply_augmentations nếu có strategies được chọn
+        if len(Config.AUGMENTATION_STRATEGIES) > 0 and (
+            Config.USE_MULTIPLE_NOISE_LEVELS or
+            'dropout' in Config.AUGMENTATION_STRATEGIES or
+            'block_missingness' in Config.AUGMENTATION_STRATEGIES
+        ):
+            # Sử dụng augmentation strategies mới
+            augmented_datasets = preprocessor.apply_augmentations(
+                train_data,
+                strategies=Config.AUGMENTATION_STRATEGIES,
+                noise_factors=Config.NOISE_FACTORS,
+                use_multiple_noise=Config.USE_MULTIPLE_NOISE_LEVELS
+            )
+
+            # Concatenate tất cả augmented datasets với original
+            train_data_augmented = np.concatenate([train_data] + augmented_datasets)
+            print(f"  Train gốc: {train_data.shape}")
+            print(f"  Số augmented datasets: {len(augmented_datasets)}")
+            print(f"  Train augmented (total): {train_data_augmented.shape}")
+        else:
+            # Backward compatible: chỉ dùng simple noise
+            noisy_train_data = preprocessor.add_noise(train_data)
+            train_data_augmented = np.concatenate([train_data, noisy_train_data])
+            print(f"  Train gốc: {train_data.shape}")
+            print(f"  Train noisy: {noisy_train_data.shape}")
+            print(f"  Train augmented: {train_data_augmented.shape}")
+
         print(f"  ✓ Val/Test GIỮ NGUYÊN (không augment)")
     else:
         print("\n[2/6] Bỏ qua Data Augmentation")
