@@ -724,32 +724,32 @@ def main():
                                args.output_dir, num_samples=args.num_samples)
 
     # 2. Comparison by output_step (so sánh models cho mỗi output_step - 3 subplots)
-    print("\n2. Comparison by Output Step (separate subplots):")
-    for out_step in output_steps:
-        plot_comparison_by_output_step(args.results_dir, out_step, models,
-                                      args.output_dir, num_samples=args.num_samples)
+    # DISABLED: Không cần thiết, chỉ giữ overlay
+    # print("\n2. Comparison by Output Step (separate subplots):")
+    # for out_step in output_steps:
+    #     plot_comparison_by_output_step(args.results_dir, out_step, models,
+    #                                   args.output_dir, num_samples=args.num_samples)
 
     # 3. Comparison by model (so sánh output_steps cho mỗi model)
-    print("\n3. Comparison by Model:")
-    for model in models:
-        plot_comparison_by_model(args.results_dir, model, output_steps,
-                                args.output_dir, num_samples=args.num_samples)
+    # DISABLED: Không cần thiết, chỉ giữ overlay
+    # print("\n3. Comparison by Model:")
+    # for model in models:
+    #     plot_comparison_by_model(args.results_dir, model, output_steps,
+    #                             args.output_dir, num_samples=args.num_samples)
 
     # 4. Grid tổng quan
-    print("\n4. Overview Grid:")
-    for sample_idx in range(min(3, args.num_samples)):
-        plot_all_combinations_grid(args.results_dir, models, output_steps,
-                                   args.output_dir, sample_idx=sample_idx)
+    # DISABLED: Không cần thiết, chỉ giữ overlay
+    # print("\n4. Overview Grid:")
+    # for sample_idx in range(min(3, args.num_samples)):
+    #     plot_all_combinations_grid(args.results_dir, models, output_steps,
+    #                                args.output_dir, sample_idx=sample_idx)
 
     print("\n" + "=" * 100)
     print("✅ HOÀN THÀNH!")
     print("=" * 100)
     print(f"\n📁 Kết quả lưu tại: {args.output_dir}/predictions_comparison/")
     print("\nCác files đã tạo:")
-    print("  🌟 overlay_out{5,10,15,20,30,40}.png     # Overlay 3 models (KHUYÊN XEM)")
-    print("  - comparison_out{5,10,15,20,30,40}.png  # So sánh models (3 subplots)")
-    print("  - comparison_{model}.png                 # So sánh output_steps theo model")
-    print("  - grid_sample{0,1,2}.png                 # Grid tổng quan")
+    print("  🌟 overlay_out{5,10,15,20,30,40}.png     # Overlay 3 models trên cùng 1 biểu đồ")
     print("=" * 100)
 
 

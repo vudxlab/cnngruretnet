@@ -608,10 +608,11 @@ def generate_prediction_comparisons(results_dir, output_dir, num_samples=5):
     # Import here to avoid dependency if not needed
     try:
         from plot_prediction_comparison import (
-            plot_overlay_comparison,
-            plot_comparison_by_output_step,
-            plot_comparison_by_model,
-            plot_all_combinations_grid
+            plot_overlay_comparison
+            # Các hàm khác đã bị disable: chỉ giữ overlay
+            # plot_comparison_by_output_step,
+            # plot_comparison_by_model,
+            # plot_all_combinations_grid
         )
     except ImportError:
         print("\n⚠️  Không thể import plot_prediction_comparison")
@@ -659,22 +660,25 @@ def generate_prediction_comparisons(results_dir, output_dir, num_samples=5):
                                output_dir, num_samples=num_samples)
 
     # 2. Comparison by output_step (separate subplots)
-    print("\n2️⃣  Comparison by Output Step (separate subplots):")
-    for out_step in output_steps:
-        plot_comparison_by_output_step(results_dir, out_step, models,
-                                      output_dir, num_samples=num_samples)
+    # DISABLED: Không cần thiết, chỉ giữ overlay
+    # print("\n2️⃣  Comparison by Output Step (separate subplots):")
+    # for out_step in output_steps:
+    #     plot_comparison_by_output_step(results_dir, out_step, models,
+    #                                   output_dir, num_samples=num_samples)
 
     # 3. Comparison by model
-    print("\n3️⃣  Comparison by Model:")
-    for model in models:
-        plot_comparison_by_model(results_dir, model, output_steps,
-                                output_dir, num_samples=num_samples)
+    # DISABLED: Không cần thiết, chỉ giữ overlay
+    # print("\n3️⃣  Comparison by Model:")
+    # for model in models:
+    #     plot_comparison_by_model(results_dir, model, output_steps,
+    #                             output_dir, num_samples=num_samples)
 
     # 4. Grid overview
-    print("\n4️⃣  Overview Grid:")
-    for sample_idx in range(min(3, num_samples)):
-        plot_all_combinations_grid(results_dir, models, output_steps,
-                                   output_dir, sample_idx=sample_idx)
+    # DISABLED: Không cần thiết, chỉ giữ overlay
+    # print("\n4️⃣  Overview Grid:")
+    # for sample_idx in range(min(3, num_samples)):
+    #     plot_all_combinations_grid(results_dir, models, output_steps,
+    #                                output_dir, sample_idx=sample_idx)
 
     print(f"\n✅ Prediction comparisons đã lưu tại: {output_dir}/predictions_comparison/")
 
@@ -733,10 +737,7 @@ def main():
 
     if args.plot_predictions:
         print("\n  📊 Prediction Comparisons:")
-        print("  🌟 predictions_comparison/overlay_out*.png        # Overlay 3 models (KHUYÊN XEM)")
-        print("  ✓ predictions_comparison/comparison_out*.png     # So sánh models (3 subplots)")
-        print("  ✓ predictions_comparison/comparison_{model}.png  # So sánh output_steps theo model")
-        print("  ✓ predictions_comparison/grid_sample*.png        # Grid tổng quan")
+        print("  🌟 predictions_comparison/overlay_out*.png        # Overlay 3 models trên cùng 1 biểu đồ")
 
     print("=" * 100)
 
