@@ -6,7 +6,7 @@ Model Architecture Module
 import tensorflow as tf
 from tensorflow.keras import Model
 from tensorflow.keras.layers import (
-    Input, Conv1D, Add, GRU, LSTM, Dense, Dropout, BatchNormalization
+    Input, Conv1D, Add, GRU, LSTM, Dense, Dropout, BatchNormalization, Flatten
 )
 from config import Config
 
@@ -93,12 +93,14 @@ class Conv1DGRUModel:
             return_sequences=False,  # Chỉ lấy output cuối cùng
             name='gru_3'
         )(gru_out)
-
+        x = Flatten()(gru_out)
+        x = Dense(128, activation='relu')(x)
+        x = Dense(64, activation='linear')(x)
         # Output layer
         output_layer = Dense(
             units=self.output_steps,
             name='output'
-        )(gru_out)
+        )(x)
 
         # Build model
         self.model = Model(inputs=input_layer, outputs=output_layer,
