@@ -188,7 +188,7 @@ def regenerate_predictions_full(results_dir, output_step, model):
             mat_file = Config.get_mat_file_path()
             data_loader = VibrationDataLoader(mat_file)
             full_data = data_loader.load_mat_file()
-            raw_data = data_loader.get_sensor_data(sensor_idx=0)
+            raw_data = data_loader.extract_sensor_data(sensor_idx=0)
 
             preprocessor = DataPreprocessor(
                 input_steps=50,
@@ -471,7 +471,7 @@ def plot_overlay_comparison(results_dir, output_step, models, output_dir, num_sa
             mat_file = Config.get_mat_file_path()
             data_loader = VibrationDataLoader(mat_file)
             full_data = data_loader.load_mat_file()
-            raw_data = data_loader.get_sensor_data(sensor_idx=0)
+            raw_data = data_loader.extract_sensor_data(sensor_idx=0)
             preprocessor = DataPreprocessor(input_steps=50, output_steps=output_step, add_noise=True)
             data_dict = preprocessor.prepare_data(raw_data)
             cache.save_cache(data_dict, cache_key)
