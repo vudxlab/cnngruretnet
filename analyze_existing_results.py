@@ -30,13 +30,13 @@ def parse_args():
     parser.add_argument(
         '--results_dir',
         type=str,
-        default='results',
+        default='Result_no_aug',
         help='Thư mục chứa kết quả (default: results/)'
     )
     parser.add_argument(
         '--output_dir',
         type=str,
-        default='analysis',
+        default='analysis_no_aug',
         help='Thư mục lưu kết quả phân tích (default: analysis/)'
     )
     parser.add_argument(

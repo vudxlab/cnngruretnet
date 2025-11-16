@@ -1,0 +1,52 @@
+====================================================================================================
+BÁO CÁO SO SÁNH MODELS VỚI CÁC OUTPUT_STEPS
+====================================================================================================
+
+Tổng số models: 1
+Models: CONV1D_GRU
+Output steps: [5, 10, 15, 20]
+Tổng số combinations: 4
+
+====================================================================================================
+PERFORMANCE SUMMARY BY MODEL (Test Set)
+====================================================================================================
+
+
+CONV1D-GRU:
+    R² Range: 0.685171 → 0.862187
+    RMSE Range: 0.001297 → 0.001949
+    MAE Range: 0.000970 → 0.001526
+    Best output_step: 5 (R²=0.862187, RMSE=0.001297)
+    Worst output_step: 20 (R²=0.685171, RMSE=0.001949)
+    Performance degradation: 20.53%
+
+====================================================================================================
+IMPACT OF OUTPUT_STEPS ON AVERAGE PERFORMANCE
+====================================================================================================
+
+
+Output Steps = 5:
+    Average R²: 0.862187 ± nan
+    Average RMSE: 0.001297 ± nan
+    Average MAE: 0.000970 ± nan
+    Best model: CONV1D_GRU (R²=0.862187)
+
+Output Steps = 10:
+    Average R²: 0.799865 ± nan
+    Average RMSE: 0.001563 ± nan
+    Average MAE: 0.001208 ± nan
+    Best model: CONV1D_GRU (R²=0.799865)
+
+Output Steps = 15:
+    Average R²: 0.749568 ± nan
+    Average RMSE: 0.001743 ± nan
+    Average MAE: 0.001363 ± nan
+    Best model: CONV1D_GRU (R²=0.749568)
+
+Output Steps = 20:
+    Average R²: 0.685171 ± nan
+    Average RMSE: 0.001949 ± nan
+    Average MAE: 0.001526 ± nan
+    Best model: CONV1D_GRU (R²=0.685171)
+
+====================================================================================================
