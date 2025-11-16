@@ -52,6 +52,170 @@ class DataPreprocessor:
 
         return data + noise
 
+    @staticmethod
+    def add_random_dropout(data, dropout_prob=None, min_length=None, max_length=None):
+        """
+        Thêm random dropout of data segments (Data Augmentation)
+        Simulate missing data segments bằng cách dropout random các đoạn liên tiếp
+
+        Args:
+            data: numpy array 1D
+            dropout_prob: Xác suất dropout cho mỗi segment
+            min_length: Độ dài tối thiểu của segment dropout
+            max_length: Độ dài tối đa của segment dropout
+
+        Returns:
+            augmented_data: numpy array 1D với random dropouts
+        """
+        dropout_prob = dropout_prob or Config.DROPOUT_PROB
+        min_length = min_length or Config.DROPOUT_MIN_LENGTH
+        max_length = max_length or Config.DROPOUT_MAX_LENGTH
+
+        augmented_data = data.copy()
+        i = 0
+        num_dropouts = 0
+
+        while i < len(data):
+            if np.random.random() < dropout_prob:
+                # Xác định độ dài dropout segment
+                dropout_length = np.random.randint(min_length, max_length + 1)
+                end_idx = min(i + dropout_length, len(data))
+
+                # Fill bằng interpolation từ 2 đầu
+                if i > 0 and end_idx < len(data):
+                    # Linear interpolation
+                    start_val = augmented_data[i - 1]
+                    end_val = data[end_idx]
+                    for j in range(i, end_idx):
+                        ratio = (j - i + 1) / (end_idx - i + 1)
+                        augmented_data[j] = start_val + ratio * (end_val - start_val)
+                elif i == 0:
+                    # Dropout ở đầu, dùng giá trị sau
+                    augmented_data[i:end_idx] = data[end_idx]
+                else:
+                    # Dropout ở cuối, dùng giá trị trước
+                    augmented_data[i:end_idx] = augmented_data[i - 1]
+
+                num_dropouts += 1
+                i = end_idx
+            else:
+                i += 1
+
+        print(f"Thêm random dropout:")
+        print(f"  Dropout probability: {dropout_prob}")
+        print(f"  Segment length: {min_length}-{max_length}")
+        print(f"  Number of dropout segments: {num_dropouts}")
+
+        return augmented_data
+
+    @staticmethod
+    def add_block_missingness(data, block_prob=None, min_length=None, max_length=None, fill_method=None):
+        """
+        Thêm block missingness (Data Augmentation)
+        Simulate sensor failures bằng cách tạo các block dữ liệu missing
+
+        Args:
+            data: numpy array 1D
+            block_prob: Xác suất xuất hiện block missingness
+            min_length: Độ dài tối thiểu của block
+            max_length: Độ dài tối đa của block
+            fill_method: Phương pháp fill ('zero', 'mean', 'interpolate')
+
+        Returns:
+            augmented_data: numpy array 1D với block missingness
+        """
+        block_prob = block_prob or Config.BLOCK_MISS_PROB
+        min_length = min_length or Config.BLOCK_MISS_MIN_LENGTH
+        max_length = max_length or Config.BLOCK_MISS_MAX_LENGTH
+        fill_method = fill_method or Config.BLOCK_MISS_FILL_METHOD
+
+        augmented_data = data.copy()
+        num_blocks = 0
+
+        # Xác định số lượng blocks
+        if np.random.random() < block_prob:
+            num_blocks = np.random.randint(1, 4)  # 1-3 blocks
+
+            for _ in range(num_blocks):
+                # Random vị trí và độ dài
+                block_length = np.random.randint(min_length, max_length + 1)
+                start_idx = np.random.randint(0, max(1, len(data) - block_length))
+                end_idx = min(start_idx + block_length, len(data))
+
+                # Fill theo phương pháp
+                if fill_method == 'zero':
+                    augmented_data[start_idx:end_idx] = 0
+                elif fill_method == 'mean':
+                    augmented_data[start_idx:end_idx] = np.mean(data)
+                elif fill_method == 'interpolate':
+                    if start_idx > 0 and end_idx < len(data):
+                        # Linear interpolation
+                        start_val = augmented_data[start_idx - 1]
+                        end_val = data[end_idx]
+                        for j in range(start_idx, end_idx):
+                            ratio = (j - start_idx + 1) / (end_idx - start_idx + 1)
+                            augmented_data[j] = start_val + ratio * (end_val - start_val)
+                    elif start_idx == 0:
+                        augmented_data[start_idx:end_idx] = data[end_idx]
+                    else:
+                        augmented_data[start_idx:end_idx] = augmented_data[start_idx - 1]
+
+        print(f"Thêm block missingness:")
+        print(f"  Block probability: {block_prob}")
+        print(f"  Block length: {min_length}-{max_length}")
+        print(f"  Fill method: {fill_method}")
+        print(f"  Number of blocks: {num_blocks}")
+
+        return augmented_data
+
+    @staticmethod
+    def apply_augmentations(data, strategies=None, noise_factors=None, use_multiple_noise=False):
+        """
+        Áp dụng nhiều augmentation strategies
+
+        Args:
+            data: numpy array 1D - dữ liệu gốc
+            strategies: List các strategy names ['noise', 'dropout', 'block_missingness']
+            noise_factors: List các mức độ noise (nếu use_multiple_noise=True)
+            use_multiple_noise: Có sử dụng nhiều mức độ noise không
+
+        Returns:
+            augmented_datasets: List các numpy arrays đã augment
+        """
+        strategies = strategies or Config.AUGMENTATION_STRATEGIES
+        noise_factors = noise_factors or Config.NOISE_FACTORS
+        use_multiple_noise = use_multiple_noise or Config.USE_MULTIPLE_NOISE_LEVELS
+
+        augmented_datasets = []
+
+        print(f"\nÁp dụng augmentation strategies: {strategies}")
+
+        # Nếu dùng multiple noise levels
+        if use_multiple_noise and 'noise' in strategies:
+            print(f"  Sử dụng {len(noise_factors)} mức độ noise: {noise_factors}")
+            for factor in noise_factors:
+                noisy_data = DataPreprocessor.add_noise(data, noise_level_factor=factor)
+                augmented_datasets.append(noisy_data)
+                print(f"    ✓ Noise factor={factor}")
+        elif 'noise' in strategies:
+            # Chỉ dùng 1 mức noise mặc định
+            noisy_data = DataPreprocessor.add_noise(data)
+            augmented_datasets.append(noisy_data)
+
+        # Random dropout
+        if 'dropout' in strategies:
+            dropout_data = DataPreprocessor.add_random_dropout(data)
+            augmented_datasets.append(dropout_data)
+
+        # Block missingness
+        if 'block_missingness' in strategies:
+            block_data = DataPreprocessor.add_block_missingness(data)
+            augmented_datasets.append(block_data)
+
+        print(f"✓ Tạo được {len(augmented_datasets)} augmented datasets")
+
+        return augmented_datasets
+
     # ==================== SEQUENCE CREATION ====================
 
     @staticmethod

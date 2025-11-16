@@ -32,6 +32,30 @@ class Config:
     # Hệ số noise (nhân với standard deviation)
     NOISE_FACTOR = 0.1
 
+    # Multiple noise levels for robustness testing
+    # Để test nhiều mức độ nhiễu khác nhau (theo đề xuất reviewer)
+    NOISE_FACTORS = [0.05, 0.1, 0.15, 0.2]  # Danh sách các mức độ nhiễu
+    USE_MULTIPLE_NOISE_LEVELS = False  # Bật để test với nhiều mức độ
+
+    # Augmentation strategies
+    AUGMENTATION_STRATEGIES = ['noise']  # Mặc định chỉ dùng noise
+    # Các option khả dụng: 'noise', 'dropout', 'block_missingness'
+
+    # Random dropout of data segments
+    DROPOUT_PROB = 0.1  # Xác suất dropout cho mỗi timestep
+    DROPOUT_MIN_LENGTH = 1  # Độ dài tối thiểu của segment dropout
+    DROPOUT_MAX_LENGTH = 5  # Độ dài tối đa của segment dropout
+
+    # Block missingness (simulate sensor failures)
+    BLOCK_MISS_PROB = 0.05  # Xác suất xuất hiện block missingness
+    BLOCK_MISS_MIN_LENGTH = 3  # Độ dài tối thiểu của block
+    BLOCK_MISS_MAX_LENGTH = 10  # Độ dài tối đa của block
+    BLOCK_MISS_FILL_METHOD = 'interpolate'  # Phương pháp fill: 'zero', 'mean', 'interpolate'
+
+    # Augmentation multiplier (số lần nhân dữ liệu)
+    # Với multiple strategies, mỗi strategy tạo ra 1 bản sao
+    AUGMENTATION_MULTIPLIER = 1  # Số lần augment (ngoài noise)
+
     # ==================== SEQUENCE PARAMETERS ====================
     # Số timesteps cho input (X)
     INPUT_STEPS = 50
@@ -140,7 +164,9 @@ class Config:
             ("DATA PATHS", ["DATA_DIR", "MAT_FILE", "OUTPUT_DIR"]),
             ("DATA EXTRACTION", ["START_COL", "END_COL", "START_SLICE",
                                "END_SLICE", "SENSOR_IDX"]),
-            ("DATA AUGMENTATION", ["ADD_NOISE", "NOISE_FACTOR"]),
+            ("DATA AUGMENTATION", ["ADD_NOISE", "NOISE_FACTOR", "USE_MULTIPLE_NOISE_LEVELS",
+                                  "NOISE_FACTORS", "AUGMENTATION_STRATEGIES",
+                                  "DROPOUT_PROB", "BLOCK_MISS_PROB"]),
             ("SEQUENCE PARAMETERS", ["INPUT_STEPS", "OUTPUT_STEPS", "N_FEATURES"]),
             ("DATA SPLIT", ["TRAIN_RATIO", "VAL_RATIO", "TEST_RATIO"]),
             ("MODEL ARCHITECTURE", ["CONV_FILTERS", "CONV_KERNEL_SIZE",

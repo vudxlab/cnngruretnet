@@ -185,6 +185,94 @@ Chỉnh sửa `config.py` để thay đổi:
 - Kiến trúc model (số layers, units...)
 - Data split ratios
 
+## Data Augmentation Strategies (NEW)
+
+**Response to Reviewer Feedback**: Để test robustness của model trên nhiều kịch bản nhiễu khác nhau, project đã được mở rộng với multiple augmentation strategies.
+
+### Available Strategies
+
+#### 1. **Multiple Noise Levels** (Enhanced)
+Test với nhiều mức độ nhiễu khác nhau thay vì chỉ 1 mức (σ = 0.1 × std):
+
+```bash
+# Test với nhiều noise levels: [0.05, 0.1, 0.15, 0.2]
+python main.py --models cnn_resnet_gru \
+    --use_multiple_noise_levels \
+    --noise_factors 0.05 0.1 0.15 0.2 \
+    --output_dir results/multi_noise_test
+```
+
+#### 2. **Random Dropout of Segments** (NEW)
+Simulate missing data segments do transmission errors:
+
+```bash
+# Sử dụng dropout augmentation
+python main.py --models cnn_resnet_gru \
+    --augmentation_strategies noise dropout \
+    --dropout_prob 0.1 \
+    --output_dir results/dropout_test
+```
+
+#### 3. **Block Missingness** (NEW)
+Simulate sensor failures với large missing blocks:
+
+```bash
+# Sử dụng block missingness
+python main.py --models cnn_resnet_gru \
+    --augmentation_strategies noise block_missingness \
+    --block_miss_prob 0.05 \
+    --block_miss_fill_method interpolate \
+    --output_dir results/block_miss_test
+```
+
+#### 4. **Combined Strategies** (Comprehensive Test)
+Test với tất cả strategies để đánh giá robustness toàn diện:
+
+```bash
+# Comprehensive robustness test
+python main.py --models cnn_resnet_gru \
+    --augmentation_strategies noise dropout block_missingness \
+    --use_multiple_noise_levels \
+    --noise_factors 0.05 0.1 0.15 0.2 \
+    --output_dir results/robustness_test
+```
+
+### Test Augmentation Strategies
+
+Chạy demo script để visualize các augmentation strategies:
+
+```bash
+python test_augmentations.py
+```
+
+**Output**: 5 PNG files minh họa từng strategy
+
+### Configuration Parameters
+
+Trong `config.py`:
+
+```python
+# Multiple noise levels
+USE_MULTIPLE_NOISE_LEVELS = False  # Bật để test nhiều mức độ
+NOISE_FACTORS = [0.05, 0.1, 0.15, 0.2]
+
+# Augmentation strategies
+AUGMENTATION_STRATEGIES = ['noise']  # Options: 'noise', 'dropout', 'block_missingness'
+
+# Random dropout
+DROPOUT_PROB = 0.1
+DROPOUT_MIN_LENGTH = 1
+DROPOUT_MAX_LENGTH = 5
+
+# Block missingness
+BLOCK_MISS_PROB = 0.05
+BLOCK_MISS_MIN_LENGTH = 3
+BLOCK_MISS_MAX_LENGTH = 10
+BLOCK_MISS_FILL_METHOD = 'interpolate'  # Options: 'zero', 'mean', 'interpolate'
+```
+
+**📖 Detailed Guide**: Xem `AUGMENTATION_GUIDE.md` cho chi tiết và best practices
+
 ## Kết quả
 
 Model sẽ lưu vào `results/` (hoặc folder bạn chỉ định):
