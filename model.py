@@ -93,8 +93,10 @@ class Conv1DGRUModel:
             name='gru_3'
         )(x)
 
-        # Dense layer trung gian để tăng capacity (như CNN-ResNet model)
-        x = Dense(64, activation='relu', name='dense_intermediate')(x)
+        # Dense layers với capacity lớn hơn và regularization (giống CNN-ResNet model)
+        x = Dense(128, activation='relu', name='dense_1')(x)
+        x = Dropout(0.2, name='dropout_1')(x)
+        x = Dense(64, activation='relu', name='dense_2')(x)
 
         # Output layer
         output_layer = Dense(units=self.output_steps, name='output')(x)
