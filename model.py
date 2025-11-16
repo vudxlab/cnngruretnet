@@ -44,10 +44,9 @@ class Conv1DGRUModel:
         print("\nXây dựng Conv1D-GRU Model...")
 
         # Input layer
-        input_layer = Input(shape=(self.input_steps, self.n_features),
-                          name='input')
+        input_layer = Input(shape=(self.input_steps, self.n_features), name='input')
 
-        # Conv1D layer với skip connection
+        # Conv1D layer
         conv_out = Conv1D(
             filters=Config.CONV_FILTERS,
             kernel_size=Config.CONV_KERNEL_SIZE,
@@ -67,44 +66,44 @@ class Conv1DGRUModel:
         )(input_layer)
 
         # Skip Connection (Add)
-        conv_out = Add(name='skip_connection')([conv_out, input_resized])
+        x = Add(name='skip_connection')([conv_out, input_resized])
 
         # GRU layers
-        gru_out = GRU(
+        x = GRU(
             units=Config.GRU_UNITS_1,
             activation=Config.GRU_ACTIVATION,
             recurrent_activation=Config.GRU_RECURRENT_ACTIVATION,
             return_sequences=True,
             name='gru_1'
-        )(conv_out)
+        )(x)
 
-        gru_out = GRU(
+        x = GRU(
             units=Config.GRU_UNITS_2,
             activation=Config.GRU_ACTIVATION,
             recurrent_activation=Config.GRU_RECURRENT_ACTIVATION,
             return_sequences=True,
             name='gru_2'
-        )(gru_out)
+        )(x)
 
-        gru_out = GRU(
+        x = GRU(
             units=Config.GRU_UNITS_3,
             activation=Config.GRU_ACTIVATION,
             recurrent_activation=Config.GRU_RECURRENT_ACTIVATION,
             return_sequences=False,  # Chỉ lấy output cuối cùng
             name='gru_3'
-        )(gru_out)
-        x = Flatten()(gru_out)
-        x = Dense(128, activation='relu')(x)
-        x = Dense(64, activation='linear')(x)
-        # Output layer
-        output_layer = Dense(
-            units=self.output_steps,
-            name='output'
         )(x)
 
+        # Flatten và Dense layers
+        from tensorflow.keras.layers import Flatten
+        x = Flatten()(x)
+        x = Dense(128, activation='relu')(x)
+        x = Dense(64, activation='linear')(x)
+
+        # Output layer
+        output_layer = Dense(units=self.output_steps, name='output')(x)
+
         # Build model
-        self.model = Model(inputs=input_layer, outputs=output_layer,
-                          name='Conv1D_GRU')
+        self.model = Model(inputs=input_layer, outputs=output_layer, name='Conv1D_GRU')
 
         print("✓ Model đã được xây dựng")
         return self.model
