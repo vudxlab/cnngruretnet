@@ -20,6 +20,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
 from pathlib import Path
+from utils import get_model_display_name, parse_model_type_from_path
 
 
 def parse_args():
@@ -91,7 +92,11 @@ def collect_metrics_from_structure(results_dir):
             if not os.path.isdir(model_path):
                 continue
 
-            model = model_folder
+            # Parse model type và num_gru_layers từ folder name
+            model_type, num_gru_layers = parse_model_type_from_path(model_path)
+
+            # Convert sang display name
+            model_display = get_model_display_name(model_type, num_gru_layers)
 
             # Đọc metrics.csv
             metrics_file = os.path.join(model_path, 'metrics.csv')
@@ -106,7 +111,8 @@ def collect_metrics_from_structure(results_dir):
                 # Thêm thông tin model và output_step
                 for _, row in df.iterrows():
                     all_metrics.append({
-                        'model': model,
+                        'model': model_display,  # Sử dụng display name
+                        'model_type': model_type,  # Giữ lại model type gốc
                         'output_step': output_step,
                         'dataset': row['Dataset'],
                         'rmse': row['RMSE'],
@@ -114,7 +120,7 @@ def collect_metrics_from_structure(results_dir):
                         'r2': row['R2']
                     })
 
-                print(f"    ✓ {model}: {len(df)} datasets")
+                print(f"    ✓ {model_display}: {len(df)} datasets")
 
             except Exception as e:
                 print(f"    ❌ Lỗi khi đọc {model}: {e}")
@@ -185,26 +191,55 @@ def plot_metrics_vs_output_steps(metrics_df, output_dir):
         ('mae', 'MAE', 'lower is better')
     ]
 
-    colors = {'conv1d_gru': '#2ecc71', 'gru': '#3498db', 'conv1d': '#e74c3c'}
-    markers = {'conv1d_gru': 'o', 'gru': 's', 'conv1d': '^'}
-    model_names = {'conv1d_gru': 'Conv1D-GRU-ResNet', 'gru': 'GRU', 'conv1d': 'Conv1D'}
+    # Define colors và markers cho tất cả models (sử dụng display names)
+    colors = {
+        'CNN+ResNet+GRU': '#2ecc71',  # Green
+        'CNN+GRU': '#3498db',  # Blue
+        'CNN+ResNet': '#e74c3c',  # Red
+        'CNN+ResNet+GRU+BN': '#9b59b6',  # Purple
+        'CNN': '#f39c12',  # Orange
+        'GRU': '#1abc9c',  # Teal
+        'Linear Regression': '#95a5a6',  # Gray
+        'XGBoost': '#e67e22',  # Dark orange
+        'LightGBM': '#16a085',  # Dark teal
+    }
+
+    markers = {
+        'CNN+ResNet+GRU': 'o',
+        'CNN+GRU': 's',
+        'CNN+ResNet': '^',
+        'CNN+ResNet+GRU+BN': 'D',
+        'CNN': 'v',
+        'GRU': 'p',
+        'Linear Regression': 'x',
+        'XGBoost': '+',
+        'LightGBM': '*',
+    }
+
+    # Tạo colors/markers động cho models không có trong dict
+    default_colors = ['#34495e', '#7f8c8d', '#c0392b', '#8e44ad', '#27ae60', '#2980b9']
+    default_markers = ['H', '8', 'P', 'd', '<', '>']
 
     for idx, (metric, title, note) in enumerate(metrics_to_plot):
         ax = axes[idx]
 
         # Plot từng model
-        for model in sorted(test_df['model'].unique()):
+        model_list = sorted(test_df['model'].unique())
+        for i, model in enumerate(model_list):
             model_data = test_df[test_df['model'] == model].sort_values('output_step')
 
-            model_display_name = model_names.get(model, model.upper().replace('_', '-'))
+            # Get color và marker (với fallback nếu không có trong dict)
+            color = colors.get(model, default_colors[i % len(default_colors)])
+            marker = markers.get(model, default_markers[i % len(default_markers)])
+
             ax.plot(
                 model_data['output_step'],
                 model_data[metric],
-                marker=markers.get(model, 'o'),
+                marker=marker,
                 linewidth=2.5,
                 markersize=10,
-                label=model_display_name,
-                color=colors.get(model, '#95a5a6')
+                label=model,  # model đã là display name
+                color=color
             )
 
         ax.set_xlabel('Output Steps', fontsize=13, fontweight='bold')
@@ -247,8 +282,7 @@ def plot_heatmap(metrics_df, output_dir):
         # Pivot table
         pivot = test_df.pivot(index='model', columns='output_step', values=metric)
 
-        # Rename models for display
-        pivot.index = [m.upper().replace('_', '-') for m in pivot.index]
+        # Model names are already display names, no need to rename
 
         # Plot heatmap
         sns.heatmap(

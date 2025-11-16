@@ -497,14 +497,15 @@ def create_model(model_type='conv1d_gru', input_steps=None, output_steps=None,
     """
     # Deep learning models
     dl_models = {
-        'conv1d_gru': Conv1DGRUModel,
-        'conv1d': Conv1DModel,
+        # Main models
+        'cnn_resnet_gru': Conv1DGRUModel,
+        'cnn': Conv1DModel,
         'gru': GRUModel,
         # Ablation models
-        'cnn_gru_no_residual': CNNGRUNoResidual,
-        'cnn_resnet_no_gru': CNNResNetNoGRU,
-        'cnn_gru_batchnorm': CNNGRUWithBatchNorm,
-        'cnn_gru_variable': CNNGRUVariableDepth,
+        'cnn_gru': CNNGRUNoResidual,
+        'cnn_resnet': CNNResNetNoGRU,
+        'cnn_resnet_gru_bn': CNNGRUWithBatchNorm,
+        'cnn_resnet_gru_var': CNNGRUVariableDepth,
     }
 
     # Baseline models
@@ -515,7 +516,7 @@ def create_model(model_type='conv1d_gru', input_steps=None, output_steps=None,
     # Nếu là deep learning model
     if model_type_lower in dl_models:
         # Tạo instance (special case cho CNNGRUVariableDepth)
-        if model_type_lower == 'cnn_gru_variable':
+        if model_type_lower == 'cnn_resnet_gru_var':
             model_builder = dl_models[model_type_lower](
                 input_steps=input_steps,
                 output_steps=output_steps,

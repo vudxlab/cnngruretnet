@@ -31,36 +31,36 @@ def parse_arguments():
         epilog="""
 Ví dụ sử dụng:
   # Train một model
-  python main.py --models conv1d_gru
+  python main.py --models cnn_resnet_gru
 
   # Train nhiều models
-  python main.py --models conv1d_gru gru conv1d
+  python main.py --models cnn_resnet_gru gru cnn
 
   # Train với output_steps khác (dự đoán 10 timesteps)
-  python main.py --models conv1d_gru --output_steps 10
+  python main.py --models cnn_resnet_gru --output_steps 10
 
   # Train tất cả deep learning models
-  python main.py --models conv1d_gru gru conv1d --epochs 500
+  python main.py --models cnn_resnet_gru gru cnn --epochs 500
 
   # Train cả baseline models
   python main.py --models linear xgboost lightgbm
 
   # Ablation study: CNN+GRU không có residual
-  python main.py --models cnn_gru_no_residual
+  python main.py --models cnn_gru
 
   # Ablation study: CNN+ResNet không có GRU
-  python main.py --models cnn_resnet_no_gru
+  python main.py --models cnn_resnet
 
-  # Ablation study: CNN+GRU với BatchNorm/Dropout
-  python main.py --models cnn_gru_batchnorm
+  # Ablation study: CNN+ResNet+GRU với BatchNorm/Dropout
+  python main.py --models cnn_resnet_gru_bn
 
   # Ablation study: Test số lượng GRU layers khác nhau
-  python main.py --models cnn_gru_variable --num_gru_layers 1
-  python main.py --models cnn_gru_variable --num_gru_layers 2
-  python main.py --models cnn_gru_variable --num_gru_layers 4
+  python main.py --models cnn_resnet_gru_var --num_gru_layers 1
+  python main.py --models cnn_resnet_gru_var --num_gru_layers 2
+  python main.py --models cnn_resnet_gru_var --num_gru_layers 4
 
   # Train tất cả ablation models cùng lúc
-  python main.py --models conv1d_gru cnn_gru_no_residual cnn_resnet_no_gru cnn_gru_batchnorm --epochs 500
+  python main.py --models cnn_resnet_gru cnn_gru cnn_resnet cnn_resnet_gru_bn --epochs 500
         """
     )
 
@@ -74,20 +74,22 @@ Ví dụ sử dụng:
                        help="Số timesteps dự đoán (output) - Mặc định: 5")
 
     # Model parameters - ĐÃ ĐỔI TỪ model_type SANG models
-    parser.add_argument("--models", type=str, nargs='+', default=['conv1d_gru'],
+    parser.add_argument("--models", type=str, nargs='+', default=['cnn_resnet_gru'],
                        choices=[
-                           'conv1d_gru', 'conv1d', 'gru',
-                           'linear', 'xgboost', 'lightgbm',
+                           # Main models
+                           'cnn_resnet_gru', 'cnn', 'gru',
                            # Ablation study models
-                           'cnn_gru_no_residual', 'cnn_resnet_no_gru',
-                           'cnn_gru_batchnorm', 'cnn_gru_variable'
+                           'cnn_gru', 'cnn_resnet',
+                           'cnn_resnet_gru_bn', 'cnn_resnet_gru_var',
+                           # Baseline models
+                           'linear', 'xgboost', 'lightgbm'
                        ],
                        help="Loại model(s) cần train (có thể chọn nhiều)")
 
     # Variable depth parameter for ablation study
     parser.add_argument("--num_gru_layers", type=int, default=3,
                        choices=[1, 2, 3, 4],
-                       help="Số lượng GRU layers (cho cnn_gru_variable model)")
+                       help="Số lượng GRU layers (cho cnn_resnet_gru_var model)")
 
     # Training parameters
     parser.add_argument("--epochs", type=int, default=Config.EPOCHS,
@@ -180,8 +182,8 @@ def train_single_model(model_type, data_dict, args, base_output_dir):
     # ==================== BUILD MODEL ====================
     print(f"\n[{model_type}] Building model...")
 
-    # Pass num_gru_layers if model type is cnn_gru_variable
-    if model_type == 'cnn_gru_variable':
+    # Pass num_gru_layers if model type is cnn_resnet_gru_var
+    if model_type == 'cnn_resnet_gru_var':
         model = create_model(
             model_type=model_type,
             input_steps=Config.INPUT_STEPS,

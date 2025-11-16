@@ -212,6 +212,74 @@ def count_model_parameters(model):
     }
 
 
+def get_model_display_name(model_type, num_gru_layers=None):
+    """
+    Mapping model type sang tên hiển thị thống nhất cho biểu đồ
+
+    Args:
+        model_type: Model type string (e.g., 'conv1d_gru', 'cnn_gru_no_residual')
+        num_gru_layers: Số lượng GRU layers (cho cnn_gru_variable)
+
+    Returns:
+        str: Tên hiển thị thống nhất
+    """
+    MODEL_DISPLAY_NAMES = {
+        # Main models
+        'cnn_resnet_gru': 'CNN+ResNet+GRU',
+        'cnn': 'CNN',
+        'gru': 'GRU',
+
+        # Ablation models
+        'cnn_gru': 'CNN+GRU',
+        'cnn_resnet': 'CNN+ResNet',
+        'cnn_resnet_gru_bn': 'CNN+ResNet+GRU+BN',
+        'cnn_resnet_gru_var': 'CNN+ResNet+GRU',  # Default, sẽ thêm suffix
+
+        # Baseline models
+        'linear': 'Linear Regression',
+        'xgboost': 'XGBoost',
+        'lightgbm': 'LightGBM',
+        'lr': 'Linear Regression',
+        'xgb': 'XGBoost',
+        'lgbm': 'LightGBM',
+    }
+
+    display_name = MODEL_DISPLAY_NAMES.get(model_type, model_type)
+
+    # Thêm suffix cho cnn_resnet_gru_var
+    if model_type == 'cnn_resnet_gru_var' and num_gru_layers is not None:
+        display_name = f'CNN+ResNet+GRU ({num_gru_layers}L)'
+
+    return display_name
+
+
+def parse_model_type_from_path(model_path):
+    """
+    Parse model type từ folder path
+
+    Args:
+        model_path: Đường dẫn folder model (e.g., 'results/10/conv1d_gru')
+
+    Returns:
+        tuple: (model_type, num_gru_layers)
+    """
+    # Lấy tên folder cuối cùng
+    model_folder = os.path.basename(model_path)
+
+    # Check nếu có suffix _XL (e.g., cnn_gru_variable_2L)
+    if model_folder.endswith('L'):
+        parts = model_folder.rsplit('_', 1)
+        if len(parts) == 2:
+            model_type = parts[0]
+            try:
+                num_gru_layers = int(parts[1].replace('L', ''))
+                return model_type, num_gru_layers
+            except ValueError:
+                pass
+
+    return model_folder, None
+
+
 if __name__ == "__main__":
     # Test utils
     print("Testing Utils...")

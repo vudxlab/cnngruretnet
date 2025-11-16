@@ -1,10 +1,16 @@
 """
 Data Preprocessing Module
 Chịu trách nhiệm:
-- Data augmentation (thêm noise)
+- Chia dữ liệu theo thời gian (TRƯỚC)
+- Data augmentation CHỈ trên train data (SAU) - Tránh data leakage
 - Tạo sequences (sliding window)
-- Chia dữ liệu theo thời gian
-- Scaling (Min-Max normalization)
+- Scaling (Min-Max normalization) - Fit CHỈ trên train data
+
+QUAN TRỌNG - Data Leakage Prevention:
+1. Split data TRƯỚC khi augmentation
+2. Augmentation CHỈ áp dụng cho train data
+3. Val/Test data GIỮ NGUYÊN (không augment)
+4. Scaler fit CHỈ trên train sequences
 """
 
 import numpy as np
@@ -258,6 +264,11 @@ def preprocess_data(data_sensor, add_noise=None):
     Pipeline hoàn chỉnh để preprocess dữ liệu
     Đây là function chính được gọi từ main
 
+    QUAN TRỌNG - Data Leakage Prevention:
+    1. SPLIT DATA TRƯỚC (train/val/test)
+    2. AUGMENT CHỈ TRAIN DATA (không augment val/test)
+    3. Scaler fit CHỈ trên train data
+
     Args:
         data_sensor: numpy array 1D từ sensor
         add_noise: Có thêm noise không (nếu None, lấy từ Config)
@@ -270,26 +281,29 @@ def preprocess_data(data_sensor, add_noise=None):
     preprocessor = DataPreprocessor()
 
     print("\n" + "=" * 60)
-    print("DATA PREPROCESSING PIPELINE")
+    print("DATA PREPROCESSING PIPELINE (NO DATA LEAKAGE)")
     print("=" * 60)
 
-    # 1. Data Augmentation (nếu có)
-    if add_noise:
-        print("\n[1/6] Data Augmentation...")
-        noisy_data = preprocessor.add_noise(data_sensor)
-        combined_data = np.concatenate([data_sensor, noisy_data])
-        print(f"  Kết hợp: {data_sensor.shape} + {noisy_data.shape} = {combined_data.shape}")
-    else:
-        print("\n[1/6] Bỏ qua Data Augmentation")
-        combined_data = data_sensor
+    # 1. Chia dữ liệu theo thời gian TRƯỚC (tránh data leakage)
+    print("\n[1/6] Chia dữ liệu theo thời gian...")
+    train_data, val_data, test_data = preprocessor.split_data_temporally(data_sensor)
 
-    # 2. Chia dữ liệu theo thời gian
-    print("\n[2/6] Chia dữ liệu theo thời gian...")
-    train_data, val_data, test_data = preprocessor.split_data_temporally(combined_data)
+    # 2. Data Augmentation CHỈ ÁP DỤNG cho TRAIN data
+    if add_noise:
+        print("\n[2/6] Data Augmentation (CHỈ trên TRAIN data)...")
+        noisy_train_data = preprocessor.add_noise(train_data)
+        train_data_augmented = np.concatenate([train_data, noisy_train_data])
+        print(f"  Train gốc: {train_data.shape}")
+        print(f"  Train noisy: {noisy_train_data.shape}")
+        print(f"  Train augmented: {train_data_augmented.shape}")
+        print(f"  ✓ Val/Test GIỮ NGUYÊN (không augment)")
+    else:
+        print("\n[2/6] Bỏ qua Data Augmentation")
+        train_data_augmented = train_data
 
     # 3. Tạo sequences
     print("\n[3/6] Tạo sequences cho từng tập...")
-    X_train, y_train = preprocessor.create_sequences(train_data)
+    X_train, y_train = preprocessor.create_sequences(train_data_augmented)
     X_val, y_val = preprocessor.create_sequences(val_data)
     X_test, y_test = preprocessor.create_sequences(test_data)
 

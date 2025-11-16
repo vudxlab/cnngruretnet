@@ -4,15 +4,21 @@ Project dự đoán dữ liệu rung động từ cảm biến công nghiệp s�
 
 ## Kiến trúc Models
 
-### Deep Learning Models
-1. **Conv1D**: CNN thuần cho time series
-2. **GRU**: RNN với Gated Recurrent Unit
-3. **Conv1D-GRU**: Hybrid model với Residual Network (Skip Connection) - **Best Performance (R² ~ 0.976)**
+### Main Models
+1. **CNN+ResNet+GRU** (`cnn_resnet_gru`): Hybrid model với CNN, Residual Network và GRU - **Best Performance (R² ~ 0.976)**
+2. **CNN** (`cnn`): CNN thuần cho time series
+3. **GRU** (`gru`): RNN với Gated Recurrent Unit (3 layers)
+
+### Ablation Study Models
+4. **CNN+GRU** (`cnn_gru`): CNN + GRU **KHÔNG CÓ** Residual Connection (để test tác động của ResNet)
+5. **CNN+ResNet** (`cnn_resnet`): CNN + ResNet **KHÔNG CÓ** GRU layers (để test tác động của recurrent layers)
+6. **CNN+ResNet+GRU+BN** (`cnn_resnet_gru_bn`): Full model **VỚI** BatchNorm/Dropout (để test tác động của regularization)
+7. **CNN+ResNet+GRU (1L/2L/4L)** (`cnn_resnet_gru_var`): Variable depth models với 1, 2, hoặc 4 GRU layers (để test tác động của model depth)
 
 ### Baseline Models
-4. **Linear Regression**: Baseline đơn giản
-5. **XGBoost**: Tree-based model
-6. **LightGBM**: Gradient boosting model
+8. **Linear Regression** (`linear`): Baseline đơn giản
+9. **XGBoost** (`xgboost`): Tree-based model
+10. **LightGBM** (`lightgbm`): Gradient boosting model
 
 ## Cài đặt
 
@@ -45,27 +51,37 @@ pip install -r requirements.txt
 
 ```bash
 # Train một model
-python main.py --models conv1d_gru
+python main.py --models cnn_resnet_gru
 
 # Train nhiều models cùng lúc
-python main.py --models conv1d_gru gru conv1d
+python main.py --models cnn_resnet_gru gru cnn
 
 # Train tất cả Deep Learning models
-python main.py --models conv1d_gru gru conv1d --epochs 500
+python main.py --models cnn_resnet_gru gru cnn --epochs 500
 
 # Train tất cả Baseline models
 python main.py --models linear xgboost lightgbm
 
-# Train TẤT CẢ models (6 models)
-python main.py --models conv1d_gru gru conv1d linear xgboost lightgbm
+# Train TẤT CẢ main models
+python main.py --models cnn_resnet_gru gru cnn linear xgboost lightgbm
 ```
 
 **Lưu ý:** Mỗi model sẽ tự động lưu vào thư mục riêng: `results/{model_name}/`
 
 **Các model types có sẵn:**
-- `conv1d_gru` - Best model (Hybrid CNN-RNN với ResNet)
+
+**Main Models:**
+- `cnn_resnet_gru` - Best model (CNN+ResNet+GRU: Hybrid CNN-RNN với ResNet)
 - `gru` - Pure RNN với 3 GRU layers
-- `conv1d` - Pure CNN
+- `cnn` - Pure CNN
+
+**Ablation Study Models:**
+- `cnn_gru` - CNN+GRU (không có residual connection)
+- `cnn_resnet` - CNN+ResNet (không có GRU layers)
+- `cnn_resnet_gru_bn` - CNN+ResNet+GRU với BatchNorm/Dropout
+- `cnn_resnet_gru_var` - CNN+ResNet+GRU với số GRU layers tùy chỉnh (dùng `--num_gru_layers`)
+
+**Baseline Models:**
 - `linear` - Linear Regression baseline
 - `xgboost` - XGBoost baseline
 - `lightgbm` - LightGBM baseline
@@ -82,46 +98,80 @@ Script này sẽ train tất cả 6 models tuần tự và hiển thị summary 
 
 ```bash
 # Tùy chỉnh epochs, batch size
-python main.py --models conv1d_gru gru --epochs 500 --batch_size 32
+python main.py --models cnn_resnet_gru gru --epochs 500 --batch_size 32
 
 # Thay đổi số timesteps dự đoán (output_steps)
-python main.py --models conv1d_gru --output_steps 10
+python main.py --models cnn_resnet_gru --output_steps 10
 # Choices: 5 (mặc định), 10, 15, 20, 30, 40
 
 # Train không có noise
-python main.py --models conv1d_gru --no_noise
+python main.py --models cnn_resnet_gru --no_noise
 
 # Thay đổi output directory
-python main.py --models conv1d_gru --output_dir my_results
+python main.py --models cnn_resnet_gru --output_dir my_results
 
 # Train với sensor khác
-python main.py --models conv1d_gru --sensor_idx 1
+python main.py --models cnn_resnet_gru --sensor_idx 1
 
 # Kết hợp nhiều tham số
-python main.py --models conv1d_gru --output_steps 20 --epochs 1000 --batch_size 128
+python main.py --models cnn_resnet_gru --output_steps 20 --epochs 1000 --batch_size 128
 ```
 
-### 4. Sử dụng Cache (Tiết kiệm thời gian)
+### 4. Ablation Study - So sánh Model Variants
+
+Train các model variants để phân tích contribution của từng component:
+
+```bash
+# Test 1: Loại bỏ Residual Connection
+python main.py --models cnn_gru --epochs 500 --output_steps 10
+
+# Test 2: Loại bỏ GRU layers
+python main.py --models cnn_resnet --epochs 500 --output_steps 10
+
+# Test 3: Thêm BatchNorm và Dropout
+python main.py --models cnn_resnet_gru_bn --epochs 500 --output_steps 10
+
+# Test 4: Số lượng GRU layers khác nhau
+python main.py --models cnn_resnet_gru_var --num_gru_layers 1 --epochs 500 --output_steps 10
+python main.py --models cnn_resnet_gru_var --num_gru_layers 2 --epochs 500 --output_steps 10
+python main.py --models cnn_resnet_gru_var --num_gru_layers 4 --epochs 500 --output_steps 10
+
+# Train TẤT CẢ ablation variants cùng lúc
+python main.py --models cnn_resnet_gru cnn_gru cnn_resnet cnn_resnet_gru_bn --epochs 500 --output_steps 10
+```
+
+**Mục đích Ablation Study:**
+- ❌ **CNN+GRU** (no residual): Đánh giá tác động của **residual connection** → ΔRMSE = ?
+- ❌ **CNN+ResNet** (no GRU): Đánh giá tác động của **GRU layers** → ΔRMSE = ?
+- ➕ **CNN+ResNet+GRU+BN**: Đánh giá tác động của **regularization** → ΔRMSE = ?
+- 🔢 **Variable Depth (1L, 2L, 4L)**: Đánh giá tác động của **model depth** → Best depth = ?
+
+Sau khi train, phân tích kết quả:
+```bash
+python analyze_existing_results.py --results_dir results --plot_predictions
+```
+
+### 5. Sử dụng Cache (Tiết kiệm thời gian)
 
 **Cache được bật mặc định** - Preprocessed data sẽ được lưu lại và tái sử dụng!
 
 ```bash
 # Lần đầu: Preprocess và lưu cache (~30s)
-python main.py --models conv1d_gru
+python main.py --models cnn_resnet_gru
 
 # Lần sau: Load từ cache (~1s) - NHANH HƠN 30 LẦN!
 python main.py --models gru
 
 # Tắt cache (preprocess lại từ đầu)
-python main.py --models conv1d_gru --no_cache
+python main.py --models cnn_resnet_gru --no_cache
 
 # Xóa tất cả cache trước khi chạy
-python main.py --models conv1d_gru --clear_cache
+python main.py --models cnn_resnet_gru --clear_cache
 ```
 
 **Lưu ý:** Cache dựa trên `sensor_idx`, `output_steps`, `add_noise`, `input_steps`. Thay đổi bất kỳ tham số nào sẽ tạo cache mới.
 
-### 5. Xem tất cả options
+### 6. Xem tất cả options
 
 ```bash
 python main.py --help
@@ -146,29 +196,76 @@ Model sẽ lưu vào `results/` (hoặc folder bạn chỉ định):
 
 ## Performance
 
+### Main Models Performance (output_steps=5)
+
 | Model | R² (Test) | RMSE | MAE |
 |-------|-----------|------|-----|
-| **Conv1D-GRU** | **0.976** | 0.0010 | 0.0007 |
+| **CNN+ResNet+GRU** | **0.976** | 0.0010 | 0.0007 |
 | GRU | 0.963 | 0.0013 | 0.0008 |
 | XGBoost | 0.904 | 0.0019 | 0.0012 |
 | LightGBM | 0.894 | 0.0021 | 0.0013 |
-| Conv1D | 0.867 | 0.0023 | 0.0016 |
+| CNN | 0.867 | 0.0023 | 0.0016 |
 | Linear Regression | 0.867 | 0.0024 | 0.0017 |
+
+### Ablation Study Results
+
+Sau khi train các ablation models, bạn có thể so sánh để xem:
+- **Impact của Residual Connection**: So sánh CNN+ResNet+GRU vs CNN+GRU
+- **Impact của GRU Layers**: So sánh CNN+ResNet+GRU vs CNN+ResNet
+- **Impact của BatchNorm/Dropout**: So sánh CNN+ResNet+GRU vs CNN+ResNet+GRU+BN
+- **Optimal Model Depth**: So sánh các variants 1L, 2L, 3L, 4L
+
+Phân tích bằng:
+```bash
+python analyze_existing_results.py --results_dir results
+```
 
 ## Đặc điểm kỹ thuật
 
 ### Residual Network (Skip Connection)
-Conv1D-GRU model sử dụng skip connection giữa input và Conv1D output:
+CNN+ResNet+GRU model sử dụng skip connection giữa input và Conv1D output:
 ```python
 conv_out = Conv1D(64, kernel_size=3, activation='relu')(input_layer)
 input_resized = Conv1D(64, kernel_size=1, activation='linear')(input_layer)
 conv_out = Add()([conv_out, input_resized])  # Residual connection
 ```
 
+### Model Architecture Comparison
+
+| Component | CNN+ResNet+GRU | CNN+GRU | CNN+ResNet | CNN | GRU |
+|-----------|----------------|---------|------------|-----|-----|
+| **Conv1D Layer** | ✅ | ✅ | ✅ | ✅ | ❌ |
+| **Residual Connection** | ✅ | ❌ | ✅ | ❌ | ❌ |
+| **GRU Layers (3)** | ✅ | ✅ | ❌ | ❌ | ✅ |
+| **BatchNorm/Dropout** | ❌* | ❌ | ❌ | ✅ | ❌ |
+
+*Sử dụng `cnn_resnet_gru_bn` để thêm BatchNorm/Dropout vào full model.
+
 ### Data Leakage Prevention
-- Scaler fit **chỉ trên train data**
-- Data split **theo thời gian** (không shuffle)
-- Sequences tạo **sau khi split** data
+
+Dự án này **ĐÃ SỬA** các vấn đề data leakage phổ biến:
+
+**✅ Flow ĐÚNG (Tránh Data Leakage):**
+```
+1. Split data theo thời gian (train/val/test) - TRƯỚC
+2. Augmentation (add noise) CHỈ trên TRAIN data - SAU
+3. Val/Test data GIỮ NGUYÊN (không augment)
+4. Scaler fit CHỈ trên train sequences
+5. Tạo sequences SAU khi split
+```
+
+**❌ Flow SAI (Có Data Leakage):**
+```
+1. Augmentation trên TOÀN BỘ data
+2. Split data (train/val/test)
+→ Kết quả: Cùng 1 mẫu xuất hiện ở cả train và test (bản gốc + bản noisy)
+```
+
+**Chi tiết:**
+- **Temporal Split**: Data split theo thời gian (60/20/20), **KHÔNG shuffle**
+- **Augmentation**: CHỈ áp dụng cho train data (val/test giữ nguyên)
+- **Scaler Fitting**: Fit CHỈ trên train sequences, apply lên val/test
+- **Sequence Creation**: Tạo sau khi split data (không tạo trước)
 
 ## So sánh Models và Output Steps
 
@@ -208,6 +305,30 @@ Tạo thêm:
 - `QUICK_COMPARISON.md` - Hướng dẫn nhanh
 - `PREDICTION_COMPARISON_GUIDE.md` - Hướng dẫn chi tiết predictions
 - `COMPARISON_GUIDE.md` - Hướng dẫn train từ đầu
+
+## Tên Model Thống Nhất
+
+Trong các biểu đồ và báo cáo, tên model được chuẩn hóa như sau:
+
+| Model Type (Code) | Tên Hiển Thị (Charts/Reports) |
+|-------------------|-------------------------------|
+| `cnn_resnet_gru` | **CNN+ResNet+GRU** |
+| `cnn_gru` | **CNN+GRU** |
+| `cnn_resnet` | **CNN+ResNet** |
+| `cnn_resnet_gru_bn` | **CNN+ResNet+GRU+BN** |
+| `cnn_resnet_gru_var` | **CNN+ResNet+GRU (XL)** (X = số layers) |
+| `cnn` | **CNN** |
+| `gru` | **GRU** |
+| `linear` | **Linear Regression** |
+| `xgboost` | **XGBoost** |
+| `lightgbm` | **LightGBM** |
+
+Tên này được sử dụng nhất quán trong:
+- ✅ Line charts (metrics vs output_steps)
+- ✅ Heatmaps
+- ✅ Comparison tables
+- ✅ Summary reports
+- ✅ Prediction plots
 
 ## Tác giả
 
