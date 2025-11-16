@@ -12,7 +12,6 @@ from datetime import datetime
 from config import Config
 from data_loader import load_vibration_data
 from data_preprocessing import preprocess_data
-from data_cache import DataCache, preprocess_with_cache
 from model import create_model
 from trainer import train_model
 from evaluator import evaluate_model
@@ -158,14 +157,6 @@ Ví dụ sử dụng:
     parser.add_argument("--seed", type=int, default=Config.SEED,
                        help="Random seed")
 
-    # Cache options
-    parser.add_argument("--use_cache", action="store_true", default=True,
-                       help="Sử dụng cached preprocessed data (mặc định: True)")
-    parser.add_argument("--no_cache", action="store_true",
-                       help="KHÔNG sử dụng cache, preprocess lại từ đầu")
-    parser.add_argument("--clear_cache", action="store_true",
-                       help="Xóa tất cả cached data trước khi chạy")
-
     # Modes
     parser.add_argument("--skip_training", action="store_true",
                        help="Bỏ qua training (chỉ load model)")
@@ -179,10 +170,6 @@ Ví dụ sử dụng:
     # Handle no_noise flag
     if args.no_noise:
         args.add_noise = False
-
-    # Handle no_cache flag
-    if args.no_cache:
-        args.use_cache = False
 
     return args
 
@@ -377,7 +364,6 @@ def main():
     print(f"\nModels to train: {', '.join(args.models)}")
     print(f"Output steps (dự đoán): {args.output_steps} timesteps")
     print(f"Base output directory: {args.output_dir}")
-    print(f"Cache: {'Enabled' if args.use_cache else 'Disabled'}")
     print(f"Augmentation strategies: {', '.join(args.augmentation_strategies)}")
     if args.use_multiple_noise_levels:
         print(f"  Multiple noise levels: {args.noise_factors}")
@@ -385,12 +371,6 @@ def main():
         print(f"  Dropout probability: {args.dropout_prob}")
     if 'block_missingness' in args.augmentation_strategies:
         print(f"  Block missingness prob: {args.block_miss_prob}, fill method: {args.block_miss_fill_method}")
-
-    # Clear cache if requested
-    if args.clear_cache:
-        print("\n🗑️  Đang xóa tất cả cached data...")
-        cache = DataCache()
-        cache.clear_cache()
 
     # Set random seed
     set_random_seed(args.seed)
@@ -400,41 +380,16 @@ def main():
     Config.print_config()
 
     # ==================== STEP 1-2: LOAD & PREPROCESS DATA ====================
-    print_separator("STEP 1-2: LOAD & PREPROCESS DATA (WITH CACHE)", width=70)
+    print_separator("STEP 1-2: LOAD & PREPROCESS DATA", width=70)
 
-    # Kiểm tra cache
-    cache = DataCache()
-    cache_key = cache.get_cache_key(
-        sensor_idx=args.sensor_idx,
-        output_steps=args.output_steps,
-        add_noise=args.add_noise,
-        input_steps=Config.INPUT_STEPS
+    print_separator("STEP 1: LOAD DATA", width=70)
+    data_sensor = load_vibration_data(
+        mat_file_path=args.mat_file,
+        sensor_idx=args.sensor_idx
     )
 
-    cache_available = cache.cache_exists(cache_key)
-
-    if args.use_cache and cache_available:
-        # Load từ cache
-        data_dict = cache.load_cache(cache_key)
-    else:
-        # Load và preprocess từ đầu
-        if args.use_cache and not cache_available:
-            print("\n⚠️  Không tìm thấy cache, đang preprocess từ đầu...")
-        elif not args.use_cache:
-            print("\n⚙️  Cache disabled, đang preprocess từ đầu...")
-
-        print_separator("STEP 1: LOAD DATA", width=70)
-        data_sensor = load_vibration_data(
-            mat_file_path=args.mat_file,
-            sensor_idx=args.sensor_idx
-        )
-
-        print_separator("STEP 2: PREPROCESS DATA", width=70)
-        data_dict = preprocess_data(data_sensor, add_noise=args.add_noise)
-
-        # Lưu cache
-        if args.use_cache:
-            cache.save_cache(data_dict, cache_key)
+    print_separator("STEP 2: PREPROCESS DATA", width=70)
+    data_dict = preprocess_data(data_sensor, add_noise=args.add_noise)
 
     # Hiển thị shapes
     print(f"\n✓ Data shapes:")
