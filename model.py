@@ -234,17 +234,262 @@ class GRUModel:
         return self.model
 
 
+# ==================== ABLATION STUDY MODELS ====================
+
+class CNNGRUNoResidual:
+    """
+    CNN+GRU Model KHÔNG CÓ Skip Connection
+    Ablation: Để test tác động của residual connection
+    """
+
+    def __init__(self, input_steps=None, output_steps=None, n_features=None):
+        self.input_steps = input_steps or Config.INPUT_STEPS
+        self.output_steps = output_steps or Config.OUTPUT_STEPS
+        self.n_features = n_features or Config.N_FEATURES
+        self.model = None
+
+    def build(self):
+        """Xây dựng CNN+GRU model without residual"""
+        print("\nXây dựng CNN+GRU Model (No Residual)...")
+
+        input_layer = Input(shape=(self.input_steps, self.n_features))
+
+        # Conv1D layer (KHÔNG có skip connection)
+        conv_out = Conv1D(
+            filters=Config.CONV_FILTERS,
+            kernel_size=Config.CONV_KERNEL_SIZE,
+            activation=Config.CONV_ACTIVATION,
+            padding=Config.CONV_PADDING,
+            name='conv1d'
+        )(input_layer)
+
+        # GRU layers (giống như model gốc)
+        x = GRU(Config.GRU_UNITS_1, activation='tanh', return_sequences=True, name='gru_1')(conv_out)
+        x = GRU(Config.GRU_UNITS_2, activation='tanh', return_sequences=True, name='gru_2')(x)
+        x = GRU(Config.GRU_UNITS_3, activation='tanh', return_sequences=False, name='gru_3')(x)
+
+        output_layer = Dense(self.output_steps, name='output')(x)
+
+        self.model = Model(inputs=input_layer, outputs=output_layer, name='CNN_GRU_NoResidual')
+        print("✓ CNN+GRU (No Residual) Model đã được xây dựng")
+        return self.model
+
+    def compile(self, optimizer='adam', loss='mse', metrics=['mae']):
+        if self.model is None:
+            raise ValueError("Model chưa được build!")
+        self.model.compile(optimizer=optimizer, loss=loss, metrics=metrics)
+        print(f"✓ Model đã compile")
+
+    def get_model(self):
+        return self.model
+
+
+class CNNResNetNoGRU:
+    """
+    CNN+ResNet Model KHÔNG CÓ GRU
+    Ablation: Để test tác động của GRU layers
+    """
+
+    def __init__(self, input_steps=None, output_steps=None, n_features=None):
+        self.input_steps = input_steps or Config.INPUT_STEPS
+        self.output_steps = output_steps or Config.OUTPUT_STEPS
+        self.n_features = n_features or Config.N_FEATURES
+        self.model = None
+
+    def build(self):
+        """Xây dựng CNN+ResNet model without GRU"""
+        print("\nXây dựng CNN+ResNet Model (No GRU)...")
+
+        input_layer = Input(shape=(self.input_steps, self.n_features))
+
+        # Conv1D layer với skip connection
+        conv_out = Conv1D(
+            filters=Config.CONV_FILTERS,
+            kernel_size=Config.CONV_KERNEL_SIZE,
+            activation=Config.CONV_ACTIVATION,
+            padding=Config.CONV_PADDING,
+            name='conv1d'
+        )(input_layer)
+
+        # Resize input để match conv_out filters
+        input_resized = Conv1D(
+            filters=Config.CONV_FILTERS,
+            kernel_size=1,
+            activation='linear',
+            padding='same',
+            name='input_resize'
+        )(input_layer)
+
+        # Skip Connection
+        x = Add(name='skip_connection')([conv_out, input_resized])
+
+        # Flatten và Dense (KHÔNG có GRU)
+        from tensorflow.keras.layers import Flatten
+        x = Flatten()(x)
+        x = Dense(128, activation='relu')(x)
+        x = Dense(64, activation='relu')(x)
+        output_layer = Dense(self.output_steps, name='output')(x)
+
+        self.model = Model(inputs=input_layer, outputs=output_layer, name='CNN_ResNet_NoGRU')
+        print("✓ CNN+ResNet (No GRU) Model đã được xây dựng")
+        return self.model
+
+    def compile(self, optimizer='adam', loss='mse', metrics=['mae']):
+        if self.model is None:
+            raise ValueError("Model chưa được build!")
+        self.model.compile(optimizer=optimizer, loss=loss, metrics=metrics)
+        print(f"✓ Model đã compile")
+
+    def get_model(self):
+        return self.model
+
+
+class CNNGRUWithBatchNorm:
+    """
+    CNN+GRU+ResNet với BatchNorm và Dropout
+    Ablation: Để test tác động của regularization
+    """
+
+    def __init__(self, input_steps=None, output_steps=None, n_features=None):
+        self.input_steps = input_steps or Config.INPUT_STEPS
+        self.output_steps = output_steps or Config.OUTPUT_STEPS
+        self.n_features = n_features or Config.N_FEATURES
+        self.model = None
+
+    def build(self):
+        """Xây dựng CNN+GRU model với BatchNorm và Dropout"""
+        print("\nXây dựng CNN+GRU+ResNet Model (with BatchNorm/Dropout)...")
+
+        input_layer = Input(shape=(self.input_steps, self.n_features))
+
+        # Conv1D layer với BatchNorm và Dropout
+        conv_out = Conv1D(
+            filters=Config.CONV_FILTERS,
+            kernel_size=Config.CONV_KERNEL_SIZE,
+            activation=Config.CONV_ACTIVATION,
+            padding=Config.CONV_PADDING,
+            name='conv1d'
+        )(input_layer)
+        conv_out = BatchNormalization()(conv_out)
+        conv_out = Dropout(0.2)(conv_out)
+
+        # Resize input
+        input_resized = Conv1D(
+            filters=Config.CONV_FILTERS,
+            kernel_size=1,
+            activation='linear',
+            padding='same',
+            name='input_resize'
+        )(input_layer)
+
+        # Skip Connection
+        x = Add(name='skip_connection')([conv_out, input_resized])
+
+        # GRU layers với Dropout
+        x = GRU(Config.GRU_UNITS_1, activation='tanh', return_sequences=True, name='gru_1')(x)
+        x = Dropout(0.2)(x)
+        x = GRU(Config.GRU_UNITS_2, activation='tanh', return_sequences=True, name='gru_2')(x)
+        x = Dropout(0.2)(x)
+        x = GRU(Config.GRU_UNITS_3, activation='tanh', return_sequences=False, name='gru_3')(x)
+
+        output_layer = Dense(self.output_steps, name='output')(x)
+
+        self.model = Model(inputs=input_layer, outputs=output_layer, name='CNN_GRU_BatchNorm')
+        print("✓ CNN+GRU (BatchNorm/Dropout) Model đã được xây dựng")
+        return self.model
+
+    def compile(self, optimizer='adam', loss='mse', metrics=['mae']):
+        if self.model is None:
+            raise ValueError("Model chưa được build!")
+        self.model.compile(optimizer=optimizer, loss=loss, metrics=metrics)
+        print(f"✓ Model đã compile")
+
+    def get_model(self):
+        return self.model
+
+
+class CNNGRUVariableDepth:
+    """
+    CNN+GRU+ResNet với số lượng GRU layers có thể config
+    Ablation: Để test tác động của model depth
+    """
+
+    def __init__(self, input_steps=None, output_steps=None, n_features=None, num_gru_layers=3):
+        self.input_steps = input_steps or Config.INPUT_STEPS
+        self.output_steps = output_steps or Config.OUTPUT_STEPS
+        self.n_features = n_features or Config.N_FEATURES
+        self.num_gru_layers = num_gru_layers  # 1, 2, 3, hoặc 4
+        self.model = None
+
+    def build(self):
+        """Xây dựng CNN+GRU model với số lượng GRU layers tùy chỉnh"""
+        print(f"\nXây dựng CNN+GRU+ResNet Model ({self.num_gru_layers} GRU layers)...")
+
+        input_layer = Input(shape=(self.input_steps, self.n_features))
+
+        # Conv1D layer với skip connection
+        conv_out = Conv1D(
+            filters=Config.CONV_FILTERS,
+            kernel_size=Config.CONV_KERNEL_SIZE,
+            activation=Config.CONV_ACTIVATION,
+            padding=Config.CONV_PADDING,
+            name='conv1d'
+        )(input_layer)
+
+        input_resized = Conv1D(
+            filters=Config.CONV_FILTERS,
+            kernel_size=1,
+            activation='linear',
+            padding='same',
+            name='input_resize'
+        )(input_layer)
+
+        x = Add(name='skip_connection')([conv_out, input_resized])
+
+        # GRU layers (số lượng tùy chỉnh)
+        gru_units = [128, 64, 32, 16]  # Units cho tối đa 4 layers
+
+        for i in range(self.num_gru_layers):
+            return_sequences = (i < self.num_gru_layers - 1)  # Layer cuối cùng return_sequences=False
+            x = GRU(
+                units=gru_units[i],
+                activation='tanh',
+                return_sequences=return_sequences,
+                name=f'gru_{i+1}'
+            )(x)
+
+        output_layer = Dense(self.output_steps, name='output')(x)
+
+        self.model = Model(
+            inputs=input_layer,
+            outputs=output_layer,
+            name=f'CNN_GRU_ResNet_{self.num_gru_layers}L'
+        )
+        print(f"✓ CNN+GRU+ResNet ({self.num_gru_layers} layers) Model đã được xây dựng")
+        return self.model
+
+    def compile(self, optimizer='adam', loss='mse', metrics=['mae']):
+        if self.model is None:
+            raise ValueError("Model chưa được build!")
+        self.model.compile(optimizer=optimizer, loss=loss, metrics=metrics)
+        print(f"✓ Model đã compile")
+
+    def get_model(self):
+        return self.model
+
+
 # ==================== FACTORY FUNCTION ====================
 
 def create_model(model_type='conv1d_gru', input_steps=None, output_steps=None,
-                n_features=None, compile_model=True):
+                n_features=None, compile_model=True, num_gru_layers=3):
     """
     Factory function để tạo model theo loại
 
     Args:
-        model_type: 'conv1d_gru', 'conv1d', 'gru', 'linear', 'xgboost', 'lightgbm'
+        model_type: Model type string
         input_steps, output_steps, n_features: Model parameters
         compile_model: Có compile model luôn không
+        num_gru_layers: Số lượng GRU layers (cho CNNGRUVariableDepth)
 
     Returns:
         model: Keras Model đã build (và compile nếu compile_model=True)
@@ -254,7 +499,12 @@ def create_model(model_type='conv1d_gru', input_steps=None, output_steps=None,
     dl_models = {
         'conv1d_gru': Conv1DGRUModel,
         'conv1d': Conv1DModel,
-        'gru': GRUModel
+        'gru': GRUModel,
+        # Ablation models
+        'cnn_gru_no_residual': CNNGRUNoResidual,
+        'cnn_resnet_no_gru': CNNResNetNoGRU,
+        'cnn_gru_batchnorm': CNNGRUWithBatchNorm,
+        'cnn_gru_variable': CNNGRUVariableDepth,
     }
 
     # Baseline models
@@ -264,12 +514,20 @@ def create_model(model_type='conv1d_gru', input_steps=None, output_steps=None,
 
     # Nếu là deep learning model
     if model_type_lower in dl_models:
-        # Tạo instance
-        model_builder = dl_models[model_type_lower](
-            input_steps=input_steps,
-            output_steps=output_steps,
-            n_features=n_features
-        )
+        # Tạo instance (special case cho CNNGRUVariableDepth)
+        if model_type_lower == 'cnn_gru_variable':
+            model_builder = dl_models[model_type_lower](
+                input_steps=input_steps,
+                output_steps=output_steps,
+                n_features=n_features,
+                num_gru_layers=num_gru_layers
+            )
+        else:
+            model_builder = dl_models[model_type_lower](
+                input_steps=input_steps,
+                output_steps=output_steps,
+                n_features=n_features
+            )
 
         # Build
         model_builder.build()

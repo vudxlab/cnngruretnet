@@ -44,6 +44,23 @@ Ví dụ sử dụng:
 
   # Train cả baseline models
   python main.py --models linear xgboost lightgbm
+
+  # Ablation study: CNN+GRU không có residual
+  python main.py --models cnn_gru_no_residual
+
+  # Ablation study: CNN+ResNet không có GRU
+  python main.py --models cnn_resnet_no_gru
+
+  # Ablation study: CNN+GRU với BatchNorm/Dropout
+  python main.py --models cnn_gru_batchnorm
+
+  # Ablation study: Test số lượng GRU layers khác nhau
+  python main.py --models cnn_gru_variable --num_gru_layers 1
+  python main.py --models cnn_gru_variable --num_gru_layers 2
+  python main.py --models cnn_gru_variable --num_gru_layers 4
+
+  # Train tất cả ablation models cùng lúc
+  python main.py --models conv1d_gru cnn_gru_no_residual cnn_resnet_no_gru cnn_gru_batchnorm --epochs 500
         """
     )
 
@@ -58,8 +75,19 @@ Ví dụ sử dụng:
 
     # Model parameters - ĐÃ ĐỔI TỪ model_type SANG models
     parser.add_argument("--models", type=str, nargs='+', default=['conv1d_gru'],
-                       choices=['conv1d_gru', 'conv1d', 'gru', 'linear', 'xgboost', 'lightgbm'],
+                       choices=[
+                           'conv1d_gru', 'conv1d', 'gru',
+                           'linear', 'xgboost', 'lightgbm',
+                           # Ablation study models
+                           'cnn_gru_no_residual', 'cnn_resnet_no_gru',
+                           'cnn_gru_batchnorm', 'cnn_gru_variable'
+                       ],
                        help="Loại model(s) cần train (có thể chọn nhiều)")
+
+    # Variable depth parameter for ablation study
+    parser.add_argument("--num_gru_layers", type=int, default=3,
+                       choices=[1, 2, 3, 4],
+                       help="Số lượng GRU layers (cho cnn_gru_variable model)")
 
     # Training parameters
     parser.add_argument("--epochs", type=int, default=Config.EPOCHS,
@@ -152,13 +180,24 @@ def train_single_model(model_type, data_dict, args, base_output_dir):
     # ==================== BUILD MODEL ====================
     print(f"\n[{model_type}] Building model...")
 
-    model = create_model(
-        model_type=model_type,
-        input_steps=Config.INPUT_STEPS,
-        output_steps=Config.OUTPUT_STEPS,
-        n_features=Config.N_FEATURES,
-        compile_model=True
-    )
+    # Pass num_gru_layers if model type is cnn_gru_variable
+    if model_type == 'cnn_gru_variable':
+        model = create_model(
+            model_type=model_type,
+            input_steps=Config.INPUT_STEPS,
+            output_steps=Config.OUTPUT_STEPS,
+            n_features=Config.N_FEATURES,
+            compile_model=True,
+            num_gru_layers=args.num_gru_layers
+        )
+    else:
+        model = create_model(
+            model_type=model_type,
+            input_steps=Config.INPUT_STEPS,
+            output_steps=Config.OUTPUT_STEPS,
+            n_features=Config.N_FEATURES,
+            compile_model=True
+        )
 
     # Print model info
     params = count_model_parameters(model)
