@@ -61,6 +61,18 @@ Ví dụ sử dụng:
 
   # Train tất cả ablation models cùng lúc
   python main.py --models cnn_resnet_gru cnn_gru cnn_resnet cnn_resnet_gru_bn --epochs 500
+
+  # Robustness testing: Multiple noise levels
+  python main.py --models cnn_resnet_gru --use_multiple_noise_levels --noise_factors 0.05 0.1 0.15 0.2
+
+  # Robustness testing: Random dropout augmentation
+  python main.py --models cnn_resnet_gru --augmentation_strategies noise dropout --dropout_prob 0.1
+
+  # Robustness testing: Block missingness augmentation
+  python main.py --models cnn_resnet_gru --augmentation_strategies noise block_missingness --block_miss_prob 0.05
+
+  # Comprehensive robustness test
+  python main.py --models cnn_resnet_gru --augmentation_strategies noise dropout block_missingness --use_multiple_noise_levels
         """
     )
 
@@ -104,6 +116,39 @@ Ví dụ sử dụng:
                        help="Có thêm noise không")
     parser.add_argument("--no_noise", action="store_true",
                        help="KHÔNG thêm noise")
+
+    # Multiple noise levels (NEW)
+    parser.add_argument("--use_multiple_noise_levels", action="store_true",
+                       default=Config.USE_MULTIPLE_NOISE_LEVELS,
+                       help="Sử dụng nhiều mức độ noise để test robustness")
+    parser.add_argument("--noise_factors", type=float, nargs='+',
+                       default=Config.NOISE_FACTORS,
+                       help="Danh sách các mức độ noise (e.g., 0.05 0.1 0.15 0.2)")
+
+    # Augmentation strategies (NEW)
+    parser.add_argument("--augmentation_strategies", type=str, nargs='+',
+                       default=Config.AUGMENTATION_STRATEGIES,
+                       choices=['noise', 'dropout', 'block_missingness'],
+                       help="Các augmentation strategies (có thể chọn nhiều)")
+
+    # Random dropout parameters (NEW)
+    parser.add_argument("--dropout_prob", type=float, default=Config.DROPOUT_PROB,
+                       help="Xác suất dropout cho random dropout augmentation")
+    parser.add_argument("--dropout_min_length", type=int, default=Config.DROPOUT_MIN_LENGTH,
+                       help="Độ dài tối thiểu của dropout segment")
+    parser.add_argument("--dropout_max_length", type=int, default=Config.DROPOUT_MAX_LENGTH,
+                       help="Độ dài tối đa của dropout segment")
+
+    # Block missingness parameters (NEW)
+    parser.add_argument("--block_miss_prob", type=float, default=Config.BLOCK_MISS_PROB,
+                       help="Xác suất xuất hiện block missingness")
+    parser.add_argument("--block_miss_min_length", type=int, default=Config.BLOCK_MISS_MIN_LENGTH,
+                       help="Độ dài tối thiểu của block missingness")
+    parser.add_argument("--block_miss_max_length", type=int, default=Config.BLOCK_MISS_MAX_LENGTH,
+                       help="Độ dài tối đa của block missingness")
+    parser.add_argument("--block_miss_fill_method", type=str, default=Config.BLOCK_MISS_FILL_METHOD,
+                       choices=['zero', 'mean', 'interpolate'],
+                       help="Phương pháp fill cho block missingness")
 
     # Output
     parser.add_argument("--output_dir", type=str, default="results",
@@ -311,6 +356,19 @@ def main():
     Config.EARLY_STOPPING_PATIENCE = args.patience
     Config.SEED = args.seed
 
+    # Update augmentation settings (NEW)
+    Config.ADD_NOISE = args.add_noise
+    Config.USE_MULTIPLE_NOISE_LEVELS = args.use_multiple_noise_levels
+    Config.NOISE_FACTORS = args.noise_factors
+    Config.AUGMENTATION_STRATEGIES = args.augmentation_strategies
+    Config.DROPOUT_PROB = args.dropout_prob
+    Config.DROPOUT_MIN_LENGTH = args.dropout_min_length
+    Config.DROPOUT_MAX_LENGTH = args.dropout_max_length
+    Config.BLOCK_MISS_PROB = args.block_miss_prob
+    Config.BLOCK_MISS_MIN_LENGTH = args.block_miss_min_length
+    Config.BLOCK_MISS_MAX_LENGTH = args.block_miss_max_length
+    Config.BLOCK_MISS_FILL_METHOD = args.block_miss_fill_method
+
     # Print header
     print_separator("TIME SERIES FORECASTING PROJECT", width=70)
     print("Fixed Data Leakage - Modular Architecture")
@@ -320,6 +378,13 @@ def main():
     print(f"Output steps (dự đoán): {args.output_steps} timesteps")
     print(f"Base output directory: {args.output_dir}")
     print(f"Cache: {'Enabled' if args.use_cache else 'Disabled'}")
+    print(f"Augmentation strategies: {', '.join(args.augmentation_strategies)}")
+    if args.use_multiple_noise_levels:
+        print(f"  Multiple noise levels: {args.noise_factors}")
+    if 'dropout' in args.augmentation_strategies:
+        print(f"  Dropout probability: {args.dropout_prob}")
+    if 'block_missingness' in args.augmentation_strategies:
+        print(f"  Block missingness prob: {args.block_miss_prob}, fill method: {args.block_miss_fill_method}")
 
     # Clear cache if requested
     if args.clear_cache:
