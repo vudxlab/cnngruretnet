@@ -12,6 +12,11 @@ import seaborn as sns
 from pathlib import Path
 import pickle
 
+from config import Config
+from data_loader import VibrationDataLoader
+from data_preprocessing import preprocess_data
+from data_cache import DataCache
+
 
 def parse_args():
     """Parse command line arguments"""
@@ -190,13 +195,16 @@ def regenerate_predictions_full(results_dir, output_step, model):
             full_data = data_loader.load_mat_file()
             raw_data = data_loader.extract_sensor_data(sensor_idx=0)
 
-            preprocessor = DataPreprocessor(
-                input_steps=50,
-                output_steps=output_step,
-                add_noise=True
-            )
+            # Tạm thời set Config.OUTPUT_STEPS
+            original_output_steps = Config.OUTPUT_STEPS
+            Config.OUTPUT_STEPS = output_step
 
-            data_dict = preprocessor.prepare_data(raw_data)
+            # Sử dụng preprocess_data function
+            data_dict = preprocess_data(raw_data, add_noise=True)
+
+            # Restore Config
+            Config.OUTPUT_STEPS = original_output_steps
+
             cache.save_cache(data_dict, cache_key)
 
         # Get TOÀN BỘ test data
@@ -472,8 +480,17 @@ def plot_overlay_comparison(results_dir, output_step, models, output_dir, num_sa
             data_loader = VibrationDataLoader(mat_file)
             full_data = data_loader.load_mat_file()
             raw_data = data_loader.extract_sensor_data(sensor_idx=0)
-            preprocessor = DataPreprocessor(input_steps=50, output_steps=output_step, add_noise=True)
-            data_dict = preprocessor.prepare_data(raw_data)
+
+            # Tạm thời set Config.OUTPUT_STEPS
+            original_output_steps = Config.OUTPUT_STEPS
+            Config.OUTPUT_STEPS = output_step
+
+            # Sử dụng preprocess_data function
+            data_dict = preprocess_data(raw_data, add_noise=True)
+
+            # Restore Config
+            Config.OUTPUT_STEPS = original_output_steps
+
             cache.save_cache(data_dict, cache_key)
 
         X_test = data_dict['X_test']
