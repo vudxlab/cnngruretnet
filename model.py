@@ -6,7 +6,7 @@ Model Architecture Module
 import tensorflow as tf
 from tensorflow.keras import Model
 from tensorflow.keras.layers import (
-    Input, Conv1D, Add, GRU, LSTM, Dense, Dropout, BatchNormalization, Flatten
+    Input, Conv1D, Add, GRU, LSTM, Dense, Dropout, BatchNormalization, Flatten, Bidirectional
 )
 from config import Config
 
@@ -46,14 +46,30 @@ class Conv1DGRUModel:
         # Input layer
         input_layer = Input(shape=(self.input_steps, self.n_features), name='input')
 
-        # Conv1D layer
+        # Stacked Conv1D layers (extract features tốt hơn)
+        x = Conv1D(
+            filters=Config.CONV_FILTERS,
+            kernel_size=Config.CONV_KERNEL_SIZE,
+            activation=Config.CONV_ACTIVATION,
+            padding=Config.CONV_PADDING,
+            name='conv1d_1'
+        )(input_layer)
+
+        x = Conv1D(
+            filters=Config.CONV_FILTERS,
+            kernel_size=Config.CONV_KERNEL_SIZE,
+            activation=Config.CONV_ACTIVATION,
+            padding=Config.CONV_PADDING,
+            name='conv1d_2'
+        )(x)
+
         conv_out = Conv1D(
             filters=Config.CONV_FILTERS,
             kernel_size=Config.CONV_KERNEL_SIZE,
             activation=Config.CONV_ACTIVATION,
             padding=Config.CONV_PADDING,
-            name='conv1d'
-        )(input_layer)
+            name='conv1d_3'
+        )(x)
 
         # Resize input để match conv_out filters (cho skip connection)
         input_resized = Conv1D(
@@ -67,29 +83,35 @@ class Conv1DGRUModel:
         # Skip Connection (ResNet-style)
         x = Add(name='skip_connection')([conv_out, input_resized])
 
-        # GRU layers
-        x = GRU(
-            units=Config.GRU_UNITS_1,
-            activation=Config.GRU_ACTIVATION,
-            recurrent_activation=Config.GRU_RECURRENT_ACTIVATION,
-            return_sequences=True,
-            name='gru_1'
+        # Bidirectional GRU layers (học từ cả 2 hướng)
+        x = Bidirectional(
+            GRU(
+                units=Config.GRU_UNITS_1,
+                activation=Config.GRU_ACTIVATION,
+                recurrent_activation=Config.GRU_RECURRENT_ACTIVATION,
+                return_sequences=True
+            ),
+            name='bidirectional_gru_1'
         )(x)
 
-        x = GRU(
-            units=Config.GRU_UNITS_2,
-            activation=Config.GRU_ACTIVATION,
-            recurrent_activation=Config.GRU_RECURRENT_ACTIVATION,
-            return_sequences=True,
-            name='gru_2'
+        x = Bidirectional(
+            GRU(
+                units=Config.GRU_UNITS_2,
+                activation=Config.GRU_ACTIVATION,
+                recurrent_activation=Config.GRU_RECURRENT_ACTIVATION,
+                return_sequences=True
+            ),
+            name='bidirectional_gru_2'
         )(x)
 
-        x = GRU(
-            units=Config.GRU_UNITS_3,
-            activation=Config.GRU_ACTIVATION,
-            recurrent_activation=Config.GRU_RECURRENT_ACTIVATION,
-            return_sequences=False,
-            name='gru_3'
+        x = Bidirectional(
+            GRU(
+                units=Config.GRU_UNITS_3,
+                activation=Config.GRU_ACTIVATION,
+                recurrent_activation=Config.GRU_RECURRENT_ACTIVATION,
+                return_sequences=False
+            ),
+            name='bidirectional_gru_3'
         )(x)
 
         # Output layer
