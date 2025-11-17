@@ -46,7 +46,7 @@ class Conv1DGRUModel:
         # Input layer
         input_layer = Input(shape=(self.input_steps, self.n_features), name='input')
 
-        # Conv1D layer (quay về 1 layer đơn giản)
+        # Conv1D layer
         conv_out = Conv1D(
             filters=Config.CONV_FILTERS,
             kernel_size=Config.CONV_KERNEL_SIZE,
@@ -67,7 +67,7 @@ class Conv1DGRUModel:
         # Skip Connection (ResNet-style)
         x = Add(name='skip_connection')([conv_out, input_resized])
 
-        # GRU layers - TẤT CẢ return_sequences=True để dùng attention
+        # GRU layers
         x = GRU(
             units=Config.GRU_UNITS_1,
             activation=Config.GRU_ACTIVATION,
@@ -88,18 +88,11 @@ class Conv1DGRUModel:
             units=Config.GRU_UNITS_3,
             activation=Config.GRU_ACTIVATION,
             recurrent_activation=Config.GRU_RECURRENT_ACTIVATION,
-            return_sequences=True,  # Giữ sequences cho attention
+            return_sequences=False,  # Return scalar cho output layer
             name='gru_3'
         )(x)
 
-        # Attention Mechanism (self-attention)
-        # Query và Value đều là output từ GRU layer cuối
-        attention_output = Attention(name='attention')([x, x])
-
-        # Global Average Pooling để reduce về vector
-        x = GlobalAveragePooling1D(name='global_avg_pooling')(attention_output)
-
-        # Output layer
+        # Output layer (trực tiếp từ GRU)
         output_layer = Dense(units=self.output_steps, name='output')(x)
 
         # Build model
