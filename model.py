@@ -67,9 +67,6 @@ class Conv1DGRUModel:
         # Skip Connection (ResNet-style)
         x = Add(name='skip_connection')([conv_out, input_resized])
 
-        # BatchNormalization sau skip connection
-        x = BatchNormalization(name='bn_after_skip')(x)
-
         # GRU layers
         x = GRU(
             units=Config.GRU_UNITS_1,
@@ -94,10 +91,6 @@ class Conv1DGRUModel:
             return_sequences=False,
             name='gru_3'
         )(x)
-
-        # Thêm intermediate Dense layer để transform GRU output tốt hơn
-        x = Dense(units=64, activation='relu', name='dense_intermediate')(x)
-        x = Dropout(0.3, name='dropout')(x)
 
         # Output layer
         output_layer = Dense(units=self.output_steps, name='output')(x)
