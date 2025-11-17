@@ -46,7 +46,7 @@ class Conv1DGRUModel:
         # Input layer
         input_layer = Input(shape=(self.input_steps, self.n_features), name='input')
 
-        # Stacked Conv1D layers (extract features tốt hơn)
+        # 2 Conv1D layers (thay vì 3, giảm complexity)
         x = Conv1D(
             filters=Config.CONV_FILTERS,
             kernel_size=Config.CONV_KERNEL_SIZE,
@@ -55,20 +55,12 @@ class Conv1DGRUModel:
             name='conv1d_1'
         )(input_layer)
 
-        x = Conv1D(
-            filters=Config.CONV_FILTERS,
-            kernel_size=Config.CONV_KERNEL_SIZE,
-            activation=Config.CONV_ACTIVATION,
-            padding=Config.CONV_PADDING,
-            name='conv1d_2'
-        )(x)
-
         conv_out = Conv1D(
             filters=Config.CONV_FILTERS,
             kernel_size=Config.CONV_KERNEL_SIZE,
             activation=Config.CONV_ACTIVATION,
             padding=Config.CONV_PADDING,
-            name='conv1d_3'
+            name='conv1d_2'
         )(x)
 
         # Resize input để match conv_out filters (cho skip connection)
@@ -83,36 +75,33 @@ class Conv1DGRUModel:
         # Skip Connection (ResNet-style)
         x = Add(name='skip_connection')([conv_out, input_resized])
 
-        # Bidirectional GRU layers (học từ cả 2 hướng)
-        x = Bidirectional(
-            GRU(
-                units=Config.GRU_UNITS_1,
-                activation=Config.GRU_ACTIVATION,
-                recurrent_activation=Config.GRU_RECURRENT_ACTIVATION,
-                return_sequences=True
-            ),
-            name='bidirectional_gru_1'
+        # GRU layers (không dùng Bidirectional)
+        x = GRU(
+            units=Config.GRU_UNITS_1,
+            activation=Config.GRU_ACTIVATION,
+            recurrent_activation=Config.GRU_RECURRENT_ACTIVATION,
+            return_sequences=True,
+            name='gru_1'
         )(x)
 
-        x = Bidirectional(
-            GRU(
-                units=Config.GRU_UNITS_2,
-                activation=Config.GRU_ACTIVATION,
-                recurrent_activation=Config.GRU_RECURRENT_ACTIVATION,
-                return_sequences=True
-            ),
-            name='bidirectional_gru_2'
+        x = GRU(
+            units=Config.GRU_UNITS_2,
+            activation=Config.GRU_ACTIVATION,
+            recurrent_activation=Config.GRU_RECURRENT_ACTIVATION,
+            return_sequences=True,
+            name='gru_2'
         )(x)
 
-        x = Bidirectional(
-            GRU(
-                units=Config.GRU_UNITS_3,
-                activation=Config.GRU_ACTIVATION,
-                recurrent_activation=Config.GRU_RECURRENT_ACTIVATION,
-                return_sequences=False
-            ),
-            name='bidirectional_gru_3'
+        x = GRU(
+            units=Config.GRU_UNITS_3,
+            activation=Config.GRU_ACTIVATION,
+            recurrent_activation=Config.GRU_RECURRENT_ACTIVATION,
+            return_sequences=False,
+            name='gru_3'
         )(x)
+
+        # Thêm Dense layer nhỏ trước output
+        x = Dense(units=32, activation='relu', name='dense_intermediate')(x)
 
         # Output layer
         output_layer = Dense(units=self.output_steps, name='output')(x)
