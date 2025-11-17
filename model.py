@@ -52,7 +52,6 @@ class Conv1DGRUModel:
             kernel_size=Config.CONV_KERNEL_SIZE,
             activation=Config.CONV_ACTIVATION,
             padding=Config.CONV_PADDING,
-            strides=1,
             name='conv1d'
         )(input_layer)
 
@@ -65,8 +64,11 @@ class Conv1DGRUModel:
             name='input_resize'
         )(input_layer)
 
-        # Skip Connection (Add)
+        # Skip Connection (ResNet-style)
         x = Add(name='skip_connection')([conv_out, input_resized])
+
+        # BatchNormalization sau skip connection
+        x = BatchNormalization(name='bn_after_skip')(x)
 
         # GRU layers
         x = GRU(
@@ -89,14 +91,13 @@ class Conv1DGRUModel:
             units=Config.GRU_UNITS_3,
             activation=Config.GRU_ACTIVATION,
             recurrent_activation=Config.GRU_RECURRENT_ACTIVATION,
-            return_sequences=False,  # Chỉ lấy output cuối cùng
+            return_sequences=False,
             name='gru_3'
         )(x)
 
-        # Dense layers với capacity lớn hơn và regularization (giống CNN-ResNet model)
-        x = Dense(128, activation='relu', name='dense_1')(x)
-        x = Dropout(0.2, name='dropout_1')(x)
-        x = Dense(64, activation='relu', name='dense_2')(x)
+        # Thêm intermediate Dense layer để transform GRU output tốt hơn
+        x = Dense(units=64, activation='relu', name='dense_intermediate')(x)
+        x = Dropout(0.3, name='dropout')(x)
 
         # Output layer
         output_layer = Dense(units=self.output_steps, name='output')(x)
