@@ -20,8 +20,8 @@ class Config:
     # Slice parameters cho dữ liệu gốc
     START_COL = 300000
     END_COL = 600000
-    START_SLICE = 14000
-    END_SLICE = 24000
+    START_SLICE = 23000
+    END_SLICE = 33000
 
     # Sensor selection (0-7)
     SENSOR_IDX = 0
@@ -30,7 +30,7 @@ class Config:
     # Có thêm noise vào dữ liệu không
     ADD_NOISE = True
     # Hệ số noise (nhân với standard deviation)
-    NOISE_FACTOR = 0.1
+    NOISE_FACTOR = 0.03
 
     # Multiple noise levels for robustness testing
     # Để test nhiều mức độ nhiễu khác nhau (theo đề xuất reviewer)
@@ -66,21 +66,21 @@ class Config:
 
     # ==================== DATA SPLIT ====================
     # Tỷ lệ chia dữ liệu (theo thời gian, KHÔNG shuffle)
-    TRAIN_RATIO = 0.6
-    VAL_RATIO = 0.2
-    TEST_RATIO = 0.2  # Tự động = 1 - train - val
+    TRAIN_RATIO = 0.7
+    VAL_RATIO = 0.15
+    TEST_RATIO = 0.15  # Tự động = 1 - train - val
 
     # ==================== MODEL ARCHITECTURE ====================
     # Conv1D parameters
-    CONV_FILTERS = 64
-    CONV_KERNEL_SIZE = 3
+    CONV_FILTERS = 256
+    CONV_KERNEL_SIZE = 5
     CONV_ACTIVATION = 'relu'
     CONV_PADDING = 'same'
 
     # GRU parameters
-    GRU_UNITS_1 = 128
-    GRU_UNITS_2 = 64
-    GRU_UNITS_3 = 32
+    GRU_UNITS_1 = 256
+    GRU_UNITS_2 = 128
+    GRU_UNITS_3 = 64
     GRU_ACTIVATION = 'tanh'
     GRU_RECURRENT_ACTIVATION = 'sigmoid'
 
