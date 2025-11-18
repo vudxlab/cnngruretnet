@@ -3,7 +3,7 @@ BÁO CÁO SO SÁNH MODELS VỚI CÁC OUTPUT_STEPS
 ====================================================================================================
 
 Tổng số models: 5
-Models: CNN, CNN+GRU, CNN+RESNET, CNN+RESNET+GRU, GRU
+Models: CONV1D, CONV1D-GRU, CONV1D-RESNET, CONV1D-RESNET-GRU, GRU
 Output steps: [5, 10, 15]
 Tổng số combinations: 15
 
@@ -12,7 +12,7 @@ PERFORMANCE SUMMARY BY MODEL (Test Set)
 ====================================================================================================
 
 
-CNN:
+CONV1D:
     R² Range: 0.614515 → 0.809523
     RMSE Range: 0.000119 → 0.000170
     MAE Range: 0.000093 → 0.000135
@@ -20,7 +20,7 @@ CNN:
     Worst output_step: 15 (R²=0.614515, RMSE=0.000170)
     Performance degradation: 24.09%
 
-CNN+GRU:
+CONV1D-GRU:
     R² Range: 0.676814 → 0.841051
     RMSE Range: 0.000109 → 0.000155
     MAE Range: 0.000082 → 0.000123
@@ -28,7 +28,7 @@ CNN+GRU:
     Worst output_step: 15 (R²=0.676814, RMSE=0.000155)
     Performance degradation: 19.53%
 
-CNN+RESNET:
+CONV1D-RESNET:
     R² Range: 0.724397 → 0.843480
     RMSE Range: 0.000108 → 0.000143
     MAE Range: 0.000083 → 0.000113
@@ -36,7 +36,7 @@ CNN+RESNET:
     Worst output_step: 15 (R²=0.724397, RMSE=0.000143)
     Performance degradation: 14.12%
 
-CNN+RESNET+GRU:
+CONV1D-RESNET-GRU:
     R² Range: 0.736753 → 0.855871
     RMSE Range: 0.000104 → 0.000140
     MAE Range: 0.000080 → 0.000110
@@ -61,18 +61,18 @@ Output Steps = 5:
     Average R²: 0.837242 ± 0.017101
     Average RMSE: 0.000110 ± 0.000006
     Average MAE: 0.000084 ± 0.000005
-    Best model: CNN+RESNET+GRU (R²=0.855871)
+    Best model: CONV1D-RESNET-GRU (R²=0.855871)
 
 Output Steps = 10:
     Average R²: 0.747375 ± 0.024207
     Average RMSE: 0.000137 ± 0.000007
     Average MAE: 0.000108 ± 0.000006
-    Best model: CNN+RESNET+GRU (R²=0.773551)
+    Best model: CONV1D-RESNET-GRU (R²=0.773551)
 
 Output Steps = 15:
     Average R²: 0.694969 ± 0.050411
     Average RMSE: 0.000151 ± 0.000012
     Average MAE: 0.000119 ± 0.000010
-    Best model: CNN+RESNET+GRU (R²=0.736753)
+    Best model: CONV1D-RESNET-GRU (R²=0.736753)
 
 ====================================================================================================
