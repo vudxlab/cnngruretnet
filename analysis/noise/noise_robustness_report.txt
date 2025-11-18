@@ -3,7 +3,7 @@ NOISE ROBUSTNESS ANALYSIS REPORT
 ====================================================================================================
 
 Model: CNN-RESNET-GRU
-Analysis Date: 2025-11-18 13:50:01
+Analysis Date: 2025-11-18 14:13:03
 
 ====================================================================================================
 TEST SET PERFORMANCE SUMMARY
@@ -15,7 +15,7 @@ Noise Factor    R² Score        RMSE            MAE
 0.05            0.766482        0.000132        0.000104       
 0.10            0.748255        0.000137        0.000109       
 0.20            0.699326        0.000150        0.000119       
-0.30            0.537209        0.000186        0.000150       
+0.30            0.687390        0.000153        0.000122       
 0.40            0.657511        0.000160        0.000128       
 
 ====================================================================================================
@@ -27,15 +27,15 @@ KEY FINDINGS
   - RMSE = 0.000132
   - MAE = 0.000104
 
-✗ Worst Performance: Noise Factor = 0.30
-  - R² = 0.537209
-  - RMSE = 0.000186
-  - MAE = 0.000150
+✗ Worst Performance: Noise Factor = 0.40
+  - R² = 0.657511
+  - RMSE = 0.000160
+  - MAE = 0.000128
 
-📉 Maximum R² Degradation: 19.23% at Noise Factor = 0.30
-📈 Maximum RMSE Increase: 17.56% at Noise Factor = 0.30
+📉 Maximum R² Degradation: 1.14% at Noise Factor = 0.40
+📈 Maximum RMSE Increase: 1.13% at Noise Factor = 0.40
 
-📊 Average R² Drop: -2.09%
+📊 Average R² Drop: -5.85%
 
 🎯 Robustness Assessment: EXCELLENT
 ====================================================================================================

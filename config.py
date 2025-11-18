@@ -30,7 +30,7 @@ class Config:
     # Có thêm noise vào dữ liệu không
     ADD_NOISE = True
     # Hệ số noise (nhân với standard deviation)
-    NOISE_FACTOR = 0.4
+    NOISE_FACTOR = 0.3
 
     # Multiple noise levels for robustness testing
     # Để test nhiều mức độ nhiễu khác nhau (theo đề xuất reviewer)
