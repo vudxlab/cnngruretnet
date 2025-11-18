@@ -275,11 +275,11 @@ def plot_comparison_by_output_step(results_dir, output_step, models, output_dir,
         'conv1d_gru': '#f39c12'        # Cam - Conv1D-GRU (legacy)
     }
     model_names = {
-        'cnn': 'CNN',
+        'cnn': 'Conv1D',
         'gru': 'GRU',
-        'cnn_gru': 'CNN+GRU',
-        'cnn_resnet': 'CNN+ResNet',
-        'cnn_resnet_gru': 'CNN+ResNet+GRU',
+        'cnn_gru': 'Conv1D-GRU',
+        'cnn_resnet': 'Conv1D-ResNet',
+        'cnn_resnet_gru': 'Conv1D-ResNet-GRU',
         'conv1d': 'Conv1D',
         'conv1d_gru': 'Conv1D-GRU-ResNet'
     }
@@ -338,11 +338,11 @@ def plot_comparison_by_model(results_dir, model, output_steps, output_dir, num_s
         num_samples: Số samples để vẽ
     """
     model_names = {
-        'cnn': 'CNN',
+        'cnn': 'Conv1D',
         'gru': 'GRU',
-        'cnn_gru': 'CNN+GRU',
-        'cnn_resnet': 'CNN+ResNet',
-        'cnn_resnet_gru': 'CNN+ResNet+GRU',
+        'cnn_gru': 'Conv1D-GRU',
+        'cnn_resnet': 'Conv1D-ResNet',
+        'cnn_resnet_gru': 'Conv1D-ResNet-GRU',
         'conv1d': 'Conv1D',
         'conv1d_gru': 'Conv1D-GRU-ResNet'
     }
@@ -542,11 +542,11 @@ def plot_overlay_comparison(results_dir, output_step, models, output_dir, num_sa
 
     # Model name mapping
     model_names = {
-        'cnn': 'CNN',
+        'cnn': 'Conv1D',
         'gru': 'GRU',
-        'cnn_gru': 'CNN+GRU',
-        'cnn_resnet': 'CNN+ResNet',
-        'cnn_resnet_gru': 'CNN+ResNet+GRU',
+        'cnn_gru': 'Conv1D-GRU',
+        'cnn_resnet': 'Conv1D-ResNet',
+        'cnn_resnet_gru': 'Conv1D-ResNet-GRU',
         'conv1d': 'Conv1D',
         'conv1d_gru': 'Conv1D-GRU-ResNet'
     }
@@ -642,11 +642,11 @@ def plot_all_combinations_grid(results_dir, models, output_steps, output_dir, sa
         'conv1d_gru': '#f39c12'        # Cam - Conv1D-GRU (legacy)
     }
     model_names = {
-        'cnn': 'CNN',
+        'cnn': 'Conv1D',
         'gru': 'GRU',
-        'cnn_gru': 'CNN+GRU',
-        'cnn_resnet': 'CNN+ResNet',
-        'cnn_resnet_gru': 'CNN+ResNet+GRU',
+        'cnn_gru': 'Conv1D-GRU',
+        'cnn_resnet': 'Conv1D-ResNet',
+        'cnn_resnet_gru': 'Conv1D-ResNet-GRU',
         'conv1d': 'Conv1D',
         'conv1d_gru': 'Conv1D-GRU-ResNet'
     }
