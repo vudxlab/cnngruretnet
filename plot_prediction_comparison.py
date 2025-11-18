@@ -417,7 +417,7 @@ def plot_comparison_by_model(results_dir, model, output_steps, output_dir, num_s
 def plot_overlay_comparison(results_dir, output_step, models, output_dir, num_samples=10):
     """
     Vẽ biểu đồ overlay: Cả 3 models trên cùng một subplot
-    Chọn 10 samples có MSE thấp nhất từ model Conv1D-GRU-ResNet
+    Chọn samples có R² tốt nhất từ model CNN-ResNet-GRU
 
     Args:
         results_dir: Thư mục kết quả
@@ -445,33 +445,45 @@ def plot_overlay_comparison(results_dir, output_step, models, output_dir, num_sa
         print(f"  ⚠️  Không có predictions cho output_step={output_step}")
         return
 
-    # Tìm 10 samples có MSE thấp nhất từ Conv1D-GRU-ResNet
-    conv1d_gru_key = None
+    # Tìm samples có R² tốt nhất từ CNN-ResNet-GRU
+    cnn_resnet_gru_key = None
     for key in predictions_data_full.keys():
-        if 'conv1d_gru' in key.lower():
-            conv1d_gru_key = key
+        if 'cnn_resnet_gru' in key.lower():
+            cnn_resnet_gru_key = key
             break
 
-    if conv1d_gru_key is None:
-        print(f"  ⚠️  Không tìm thấy Conv1D-GRU-ResNet model")
+    if cnn_resnet_gru_key is None:
+        print(f"  ⚠️  Không tìm thấy CNN-ResNet-GRU model")
         # Fallback: use first num_samples
         best_indices = list(range(min(num_samples, len(list(predictions_data_full.values())[0]['y_true']))))
     else:
-        # Tính MSE cho từng sample
-        y_true = predictions_data_full[conv1d_gru_key]['y_true']
-        y_pred = predictions_data_full[conv1d_gru_key]['y_pred']
+        # Tính R² cho từng sample
+        y_true = predictions_data_full[cnn_resnet_gru_key]['y_true']
+        y_pred = predictions_data_full[cnn_resnet_gru_key]['y_pred']
 
-        mse_per_sample = []
+        r2_per_sample = []
         for i in range(len(y_true)):
-            mse = np.mean((y_true[i] - y_pred[i]) ** 2)
-            mse_per_sample.append((i, mse))
+            # Calculate R² for this sample
+            y_true_sample = y_true[i]
+            y_pred_sample = y_pred[i]
 
-        # Sort by MSE và lấy top num_samples
-        mse_per_sample.sort(key=lambda x: x[1])
-        best_indices = [idx for idx, _ in mse_per_sample[:num_samples]]
+            # R² = 1 - (SS_res / SS_tot)
+            ss_res = np.sum((y_true_sample - y_pred_sample) ** 2)
+            ss_tot = np.sum((y_true_sample - np.mean(y_true_sample)) ** 2)
 
-        print(f"  ✓ Đã chọn {num_samples} samples tốt nhất (MSE thấp nhất)")
-        print(f"    Best MSE range: {mse_per_sample[0][1]:.6f} - {mse_per_sample[num_samples-1][1]:.6f}")
+            if ss_tot == 0:
+                r2 = 0.0  # Avoid division by zero
+            else:
+                r2 = 1 - (ss_res / ss_tot)
+
+            r2_per_sample.append((i, r2))
+
+        # Sort by R² (giảm dần) và lấy top num_samples
+        r2_per_sample.sort(key=lambda x: x[1], reverse=True)
+        best_indices = [idx for idx, _ in r2_per_sample[:num_samples]]
+
+        print(f"  ✓ Đã chọn {num_samples} samples có R² tốt nhất từ CNN-ResNet-GRU")
+        print(f"    Best R² range: {r2_per_sample[0][1]:.6f} - {r2_per_sample[num_samples-1][1]:.6f}")
 
     # Extract predictions cho best samples
     predictions_data = {}
