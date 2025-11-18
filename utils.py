@@ -225,15 +225,15 @@ def get_model_display_name(model_type, num_gru_layers=None):
     """
     MODEL_DISPLAY_NAMES = {
         # Main models
-        'cnn_resnet_gru': 'CNN+ResNet+GRU',
-        'cnn': 'CNN',
+        'cnn_resnet_gru': 'Conv1D-ResNet-GRU',
+        'cnn': 'Conv1D',
         'gru': 'GRU',
 
         # Ablation models
-        'cnn_gru': 'CNN+GRU',
-        'cnn_resnet': 'CNN+ResNet',
-        'cnn_resnet_gru_bn': 'CNN+ResNet+GRU+BN',
-        'cnn_resnet_gru_var': 'CNN+ResNet+GRU',  # Default, sẽ thêm suffix
+        'cnn_gru': 'Conv1D-GRU',
+        'cnn_resnet': 'Conv1D-ResNet',
+        'cnn_resnet_gru_bn': 'Conv1D-ResNet-GRU-BN',
+        'cnn_resnet_gru_var': 'Conv1D-ResNet-GRU',  # Default, sẽ thêm suffix
 
         # Baseline models
         'linear': 'Linear Regression',
@@ -248,7 +248,7 @@ def get_model_display_name(model_type, num_gru_layers=None):
 
     # Thêm suffix cho cnn_resnet_gru_var
     if model_type == 'cnn_resnet_gru_var' and num_gru_layers is not None:
-        display_name = f'CNN+ResNet+GRU ({num_gru_layers}L)'
+        display_name = f'Conv1D-ResNet-GRU ({num_gru_layers}L)'
 
     return display_name
 

@@ -193,11 +193,11 @@ def plot_metrics_vs_output_steps(metrics_df, output_dir):
 
     # Define colors và markers cho tất cả models (sử dụng display names)
     colors = {
-        'CNN+ResNet+GRU': '#2ecc71',  # Green
-        'CNN+GRU': '#3498db',  # Blue
-        'CNN+ResNet': '#e74c3c',  # Red
-        'CNN+ResNet+GRU+BN': '#9b59b6',  # Purple
-        'CNN': '#f39c12',  # Orange
+        'Conv1D-ResNet-GRU': '#2ecc71',  # Green
+        'Conv1D-GRU': '#3498db',  # Blue
+        'Conv1D-ResNet': '#e74c3c',  # Red
+        'Conv1D-ResNet-GRU-BN': '#9b59b6',  # Purple
+        'Conv1D': '#f39c12',  # Orange
         'GRU': '#1abc9c',  # Teal
         'Linear Regression': '#95a5a6',  # Gray
         'XGBoost': '#e67e22',  # Dark orange
@@ -205,11 +205,11 @@ def plot_metrics_vs_output_steps(metrics_df, output_dir):
     }
 
     markers = {
-        'CNN+ResNet+GRU': 'o',
-        'CNN+GRU': 's',
-        'CNN+ResNet': '^',
-        'CNN+ResNet+GRU+BN': 'D',
-        'CNN': 'v',
+        'Conv1D-ResNet-GRU': 'o',
+        'Conv1D-GRU': 's',
+        'Conv1D-ResNet': '^',
+        'Conv1D-ResNet-GRU-BN': 'D',
+        'Conv1D': 'v',
         'GRU': 'p',
         'Linear Regression': 'x',
         'XGBoost': '+',
