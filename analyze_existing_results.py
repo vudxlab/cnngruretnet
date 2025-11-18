@@ -56,7 +56,9 @@ def parse_args():
 
 def collect_metrics_from_structure(results_dir):
     """
-    Thu thập metrics từ folder structure: results/{output_step}/{model}/
+    Thu thập metrics từ folder structure:
+    - Cấu trúc 1: results/{output_step}/{model}/ (ví dụ: results/5/cnn/)
+    - Cấu trúc 2: results/{model}/ (ví dụ: results/revision/5/cnn/)
 
     Args:
         results_dir: Thư mục chứa kết quả
@@ -65,45 +67,40 @@ def collect_metrics_from_structure(results_dir):
         pd.DataFrame: DataFrame chứa tất cả metrics
     """
     print(f"\n📊 Đang thu thập metrics từ: {results_dir}/")
-    print(f"   Cấu trúc: {results_dir}/{{output_step}}/{{model}}/metrics.csv")
 
     all_metrics = []
 
-    # Duyệt qua các output_step folders (5, 10, 15, ...)
-    for output_step_folder in os.listdir(results_dir):
-        output_step_path = os.path.join(results_dir, output_step_folder)
-
-        # Kiểm tra là folder và là số
-        if not os.path.isdir(output_step_path):
-            continue
-
+    # Try to detect output_step from path
+    output_step = None
+    path_parts = Path(results_dir).parts
+    for part in reversed(path_parts):
         try:
-            output_step = int(output_step_folder)
+            output_step = int(part)
+            print(f"   ✓ Detected output_step = {output_step} từ path")
+            break
         except ValueError:
-            print(f"  ⚠️  Bỏ qua folder: {output_step_folder} (không phải số)")
             continue
 
-        print(f"\n  📂 Output steps = {output_step}")
+    # Duyệt qua các folders trong results_dir
+    for folder_name in os.listdir(results_dir):
+        folder_path = os.path.join(results_dir, folder_name)
 
-        # Duyệt qua các model folders (conv1d_gru, gru, conv1d)
-        for model_folder in os.listdir(output_step_path):
-            model_path = os.path.join(output_step_path, model_folder)
+        if not os.path.isdir(folder_path):
+            continue
 
-            if not os.path.isdir(model_path):
-                continue
+        # Check nếu folder này chứa metrics.csv → đây là model folder
+        metrics_file = os.path.join(folder_path, 'metrics.csv')
+
+        if os.path.exists(metrics_file):
+            # Đây là model folder
+            model_path = folder_path
+            model_folder = folder_name
 
             # Parse model type và num_gru_layers từ folder name
             model_type, num_gru_layers = parse_model_type_from_path(model_path)
 
             # Convert sang display name
             model_display = get_model_display_name(model_type, num_gru_layers)
-
-            # Đọc metrics.csv
-            metrics_file = os.path.join(model_path, 'metrics.csv')
-
-            if not os.path.exists(metrics_file):
-                print(f"    ⚠️  Không tìm thấy metrics.csv trong: {model_folder}")
-                continue
 
             try:
                 df = pd.read_csv(metrics_file, encoding='utf-8')
@@ -113,7 +110,7 @@ def collect_metrics_from_structure(results_dir):
                     all_metrics.append({
                         'model': model_display,  # Sử dụng display name
                         'model_type': model_type,  # Giữ lại model type gốc
-                        'output_step': output_step,
+                        'output_step': output_step if output_step else 5,  # Default 5 nếu không detect được
                         'dataset': row['Dataset'],
                         'rmse': row['RMSE'],
                         'mae': row['MAE'],
@@ -123,7 +120,52 @@ def collect_metrics_from_structure(results_dir):
                 print(f"    ✓ {model_display}: {len(df)} datasets")
 
             except Exception as e:
-                print(f"    ❌ Lỗi khi đọc {model}: {e}")
+                print(f"    ❌ Lỗi khi đọc {model_folder}: {e}")
+        else:
+            # Không có metrics.csv, có thể là output_step folder
+            # Try to check subfolders
+            try:
+                step_num = int(folder_name)
+                # Đây là output_step folder, duyệt subfolder
+                print(f"\n  📂 Output steps = {step_num}")
+
+                for model_subfolder in os.listdir(folder_path):
+                    model_subpath = os.path.join(folder_path, model_subfolder)
+
+                    if not os.path.isdir(model_subpath):
+                        continue
+
+                    metrics_subfile = os.path.join(model_subpath, 'metrics.csv')
+
+                    if not os.path.exists(metrics_subfile):
+                        continue
+
+                    # Parse model
+                    model_type, num_gru_layers = parse_model_type_from_path(model_subpath)
+                    model_display = get_model_display_name(model_type, num_gru_layers)
+
+                    try:
+                        df = pd.read_csv(metrics_subfile, encoding='utf-8')
+
+                        for _, row in df.iterrows():
+                            all_metrics.append({
+                                'model': model_display,
+                                'model_type': model_type,
+                                'output_step': step_num,
+                                'dataset': row['Dataset'],
+                                'rmse': row['RMSE'],
+                                'mae': row['MAE'],
+                                'r2': row['R2']
+                            })
+
+                        print(f"    ✓ {model_display}: {len(df)} datasets")
+
+                    except Exception as e:
+                        print(f"    ❌ Lỗi khi đọc {model_subfolder}: {e}")
+
+            except ValueError:
+                # Không phải số, skip
+                pass
 
     # Tạo DataFrame
     metrics_df = pd.DataFrame(all_metrics)
