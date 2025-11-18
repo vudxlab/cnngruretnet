@@ -30,7 +30,7 @@ class Config:
     # Có thêm noise vào dữ liệu không
     ADD_NOISE = True
     # Hệ số noise (nhân với standard deviation)
-    NOISE_FACTOR = 0.03
+    NOISE_FACTOR = 0.1
 
     # Multiple noise levels for robustness testing
     # Để test nhiều mức độ nhiễu khác nhau (theo đề xuất reviewer)
@@ -72,15 +72,15 @@ class Config:
 
     # ==================== MODEL ARCHITECTURE ====================
     # Conv1D parameters
-    CONV_FILTERS = 256
-    CONV_KERNEL_SIZE = 5
+    CONV_FILTERS = 128
+    CONV_KERNEL_SIZE = 3
     CONV_ACTIVATION = 'relu'
     CONV_PADDING = 'same'
 
     # GRU parameters
-    GRU_UNITS_1 = 256
-    GRU_UNITS_2 = 128
-    GRU_UNITS_3 = 64
+    GRU_UNITS_1 = 128
+    GRU_UNITS_2 = 64
+    GRU_UNITS_3 = 32
     GRU_ACTIVATION = 'tanh'
     GRU_RECURRENT_ACTIVATION = 'sigmoid'
 
