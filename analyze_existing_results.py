@@ -501,18 +501,26 @@ def plot_training_curves_comparison(results_dir, output_dir):
         print("\n⚠️  Không tìm thấy dữ liệu!")
         return
 
-    # Colors cho từng model
+    # Colors cho từng model - đồng nhất với các visualizations khác
     colors = {
-        'conv1d_gru': '#2ecc71',  # Xanh lá - Conv1D-GRU-ResNet
-        'gru': '#3498db',          # Xanh dương - GRU
-        'conv1d': '#e74c3c'        # Đỏ - Conv1D
+        'cnn': '#e74c3c',              # Đỏ - Conv1D
+        'gru': '#3498db',              # Xanh dương - GRU
+        'cnn_gru': '#2ecc71',          # Xanh lá - Conv1D-GRU
+        'cnn_resnet': '#9b59b6',       # Tím - Conv1D-ResNet
+        'cnn_resnet_gru': '#f39c12',   # Cam - Conv1D-ResNet-GRU
+        'conv1d': '#e74c3c',           # Đỏ - Conv1D (legacy)
+        'conv1d_gru': '#f39c12'        # Cam - Conv1D-GRU (legacy)
     }
 
-    # Model name mapping
+    # Model name mapping - đồng nhất với các visualizations khác
     model_names = {
-        'conv1d_gru': 'Conv1D-GRU-ResNet',
+        'cnn': 'Conv1D',
         'gru': 'GRU',
-        'conv1d': 'Conv1D'
+        'cnn_gru': 'Conv1D-GRU',
+        'cnn_resnet': 'Conv1D-ResNet',
+        'cnn_resnet_gru': 'Conv1D-ResNet-GRU',
+        'conv1d': 'Conv1D',
+        'conv1d_gru': 'Conv1D-GRU-ResNet'
     }
 
     # Tạo folder output
