@@ -4,8 +4,8 @@ BÁO CÁO SO SÁNH MODELS VỚI CÁC OUTPUT_STEPS
 
 Tổng số models: 5
 Models: CNN, CNN+GRU, CNN+RESNET, CNN+RESNET+GRU, GRU
-Output steps: [5, 10, 15, 20]
-Tổng số combinations: 20
+Output steps: [5, 10, 15]
+Tổng số combinations: 15
 
 ====================================================================================================
 PERFORMANCE SUMMARY BY MODEL (Test Set)
@@ -21,36 +21,36 @@ CNN:
     Performance degradation: 24.09%
 
 CNN+GRU:
-    R² Range: 0.656569 → 0.841051
-    RMSE Range: 0.000109 → 0.000160
-    MAE Range: 0.000082 → 0.000127
+    R² Range: 0.676814 → 0.841051
+    RMSE Range: 0.000109 → 0.000155
+    MAE Range: 0.000082 → 0.000123
     Best output_step: 5 (R²=0.841051, RMSE=0.000109)
-    Worst output_step: 20 (R²=0.656569, RMSE=0.000160)
-    Performance degradation: 21.93%
+    Worst output_step: 15 (R²=0.676814, RMSE=0.000155)
+    Performance degradation: 19.53%
 
 CNN+RESNET:
-    R² Range: 0.710575 → 0.843480
-    RMSE Range: 0.000108 → 0.000147
-    MAE Range: 0.000083 → 0.000116
+    R² Range: 0.724397 → 0.843480
+    RMSE Range: 0.000108 → 0.000143
+    MAE Range: 0.000083 → 0.000113
     Best output_step: 5 (R²=0.843480, RMSE=0.000108)
-    Worst output_step: 20 (R²=0.710575, RMSE=0.000147)
-    Performance degradation: 15.76%
+    Worst output_step: 15 (R²=0.724397, RMSE=0.000143)
+    Performance degradation: 14.12%
 
 CNN+RESNET+GRU:
-    R² Range: 0.608152 → 0.855871
-    RMSE Range: 0.000104 → 0.000171
-    MAE Range: 0.000080 → 0.000138
+    R² Range: 0.736753 → 0.855871
+    RMSE Range: 0.000104 → 0.000140
+    MAE Range: 0.000080 → 0.000110
     Best output_step: 5 (R²=0.855871, RMSE=0.000104)
-    Worst output_step: 20 (R²=0.608152, RMSE=0.000171)
-    Performance degradation: 28.94%
+    Worst output_step: 15 (R²=0.736753, RMSE=0.000140)
+    Performance degradation: 13.92%
 
 GRU:
-    R² Range: 0.628868 → 0.836285
-    RMSE Range: 0.000111 → 0.000166
-    MAE Range: 0.000084 → 0.000132
+    R² Range: 0.722366 → 0.836285
+    RMSE Range: 0.000111 → 0.000144
+    MAE Range: 0.000084 → 0.000114
     Best output_step: 5 (R²=0.836285, RMSE=0.000111)
-    Worst output_step: 20 (R²=0.628868, RMSE=0.000166)
-    Performance degradation: 24.80%
+    Worst output_step: 15 (R²=0.722366, RMSE=0.000144)
+    Performance degradation: 13.62%
 
 ====================================================================================================
 IMPACT OF OUTPUT_STEPS ON AVERAGE PERFORMANCE
@@ -74,11 +74,5 @@ Output Steps = 15:
     Average RMSE: 0.000151 ± 0.000012
     Average MAE: 0.000119 ± 0.000010
     Best model: CNN+RESNET+GRU (R²=0.736753)
-
-Output Steps = 20:
-    Average R²: 0.657420 ± 0.040987
-    Average RMSE: 0.000160 ± 0.000010
-    Average MAE: 0.000127 ± 0.000009
-    Best model: CNN+RESNET (R²=0.710575)
 
 ====================================================================================================
