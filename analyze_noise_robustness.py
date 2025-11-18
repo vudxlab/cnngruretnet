@@ -373,6 +373,145 @@ def calculate_degradation(metrics_df, output_dir, model_name):
     return degradation_df
 
 
+def plot_overlay_predictions(results_dir, model_name, output_dir, num_samples=5):
+    """
+    Vẽ overlay comparison của predictions với các noise levels khác nhau
+
+    Args:
+        results_dir: Thư mục chứa kết quả (e.g., results/noise)
+        model_name: Tên model (e.g., cnn_resnet_gru)
+        output_dir: Thư mục output
+        num_samples: Số samples để vẽ
+    """
+    print(f"\n📊 Đang tạo overlay predictions comparison...")
+
+    try:
+        import tensorflow as tf
+    except ImportError:
+        print("  ⚠️  TensorFlow không available, bỏ qua overlay predictions")
+        return
+
+    # Collect predictions từ các noise folders
+    predictions_dict = {}
+    noise_factors = []
+
+    for noise_folder in sorted(os.listdir(results_dir)):
+        noise_path = os.path.join(results_dir, noise_folder)
+
+        if not os.path.isdir(noise_path):
+            continue
+
+        try:
+            noise_factor = float(noise_folder)
+        except ValueError:
+            continue
+
+        # Load model và predictions
+        model_path = os.path.join(noise_path, model_name)
+        model_file = os.path.join(model_path, 'model_saved.keras')
+
+        if not os.path.exists(model_file):
+            print(f"  ⚠️  Không tìm thấy model: {noise_folder}/{model_name}/model_saved.keras")
+            continue
+
+        try:
+            # Load model
+            keras_model = tf.keras.models.load_model(model_file)
+
+            # Load predictions từ folder nếu có
+            predictions_folder = os.path.join(model_path, 'predictions')
+            y_test_file = os.path.join(predictions_folder, 'y_test.npy')
+            y_pred_file = os.path.join(predictions_folder, 'y_pred.npy')
+
+            if os.path.exists(y_test_file) and os.path.exists(y_pred_file):
+                y_test = np.load(y_test_file)
+                y_pred = np.load(y_pred_file)
+
+                predictions_dict[noise_factor] = {
+                    'y_test': y_test,
+                    'y_pred': y_pred
+                }
+                noise_factors.append(noise_factor)
+                print(f"  ✓ Loaded noise={noise_factor}: {len(y_test)} samples")
+            else:
+                print(f"  ⚠️  Không tìm thấy predictions files cho noise={noise_factor}")
+
+        except Exception as e:
+            print(f"  ❌ Lỗi khi load predictions cho noise={noise_folder}: {e}")
+
+    if not predictions_dict:
+        print("  ⚠️  Không có predictions data để vẽ overlay")
+        return
+
+    noise_factors = sorted(noise_factors)
+
+    # Chọn samples để vẽ (lấy samples có prediction tốt nhất từ noise thấp nhất)
+    baseline_noise = noise_factors[0]
+    y_test_baseline = predictions_dict[baseline_noise]['y_test']
+    y_pred_baseline = predictions_dict[baseline_noise]['y_pred']
+
+    # Tính MSE cho mỗi sample
+    mse_per_sample = []
+    for i in range(len(y_test_baseline)):
+        mse = np.mean((y_test_baseline[i] - y_pred_baseline[i]) ** 2)
+        mse_per_sample.append((i, mse))
+
+    # Sort và lấy top num_samples
+    mse_per_sample.sort(key=lambda x: x[1])
+    best_indices = [idx for idx, _ in mse_per_sample[:num_samples]]
+
+    print(f"  ✓ Đã chọn {num_samples} samples tốt nhất từ noise={baseline_noise}")
+
+    # Define colors cho từng noise level
+    colors_palette = ['#2ecc71', '#3498db', '#f39c12', '#e74c3c', '#9b59b6', '#1abc9c']
+    noise_colors = {nf: colors_palette[i % len(colors_palette)]
+                    for i, nf in enumerate(noise_factors)}
+
+    # Vẽ overlay plots
+    fig, axes = plt.subplots(num_samples, 1, figsize=(14, 4*num_samples))
+
+    if num_samples == 1:
+        axes = [axes]
+
+    for sample_idx, sample_index in enumerate(best_indices):
+        ax = axes[sample_idx]
+
+        # Plot actual (chỉ cần 1 lần từ bất kỳ noise nào)
+        y_true = predictions_dict[baseline_noise]['y_test'][sample_index]
+        timesteps = range(len(y_true))
+
+        ax.plot(timesteps, y_true, 'o-', linewidth=2.5, markersize=6,
+               label='Actual', color='black', alpha=0.8, zorder=10)
+
+        # Plot predictions từ tất cả noise levels
+        for noise_factor in noise_factors:
+            y_pred = predictions_dict[noise_factor]['y_pred'][sample_index]
+
+            ax.plot(timesteps, y_pred, 's--', linewidth=2, markersize=5,
+                   label=f'Predicted (Noise={noise_factor:.2f})',
+                   color=noise_colors[noise_factor], alpha=0.7)
+
+        # Formatting
+        ax.set_xlabel('Time Step', fontsize=11, fontweight='bold')
+        ax.set_ylabel('Value', fontsize=11, fontweight='bold')
+        ax.set_title(f'Sample {sample_idx+1} - Noise Robustness Comparison',
+                    fontsize=12, fontweight='bold')
+        ax.legend(fontsize=9, loc='best', framealpha=0.9, ncol=2)
+        ax.grid(True, alpha=0.3, linestyle='--')
+        ax.axhline(y=0, color='gray', linestyle='--', linewidth=0.5, alpha=0.5)
+
+    plt.suptitle(f'Prediction Overlay - {model_name.upper().replace("_", "-")} across Noise Levels',
+                fontsize=14, fontweight='bold', y=0.995)
+    plt.tight_layout()
+
+    # Save
+    output_file = os.path.join(output_dir, 'overlay_predictions.png')
+    plt.savefig(output_file, dpi=300, bbox_inches='tight')
+    plt.close()
+
+    print(f"✓ Đã lưu overlay predictions: {output_file}")
+
+
 def create_summary_report(metrics_df, degradation_df, output_dir, model_name):
     """Tạo báo cáo tổng hợp"""
     print(f"\n📝 Đang tạo báo cáo tổng hợp...")
@@ -486,7 +625,10 @@ def main():
     # 5. Degradation analysis
     degradation_df = calculate_degradation(metrics_df, args.output_dir, args.model)
 
-    # 6. Summary report
+    # 6. Overlay predictions comparison
+    plot_overlay_predictions(args.results_dir, args.model, args.output_dir, num_samples=5)
+
+    # 7. Summary report
     create_summary_report(metrics_df, degradation_df, args.output_dir, args.model)
 
     print("\n" + "=" * 100)
@@ -499,6 +641,7 @@ def main():
     print("  ✓ bar_comparison.png               # Bar charts so sánh")
     print("  ✓ heatmap.png                      # Heatmap tổng quan")
     print("  ✓ degradation_analysis.csv         # Phân tích performance degradation")
+    print("  ✓ overlay_predictions.png          # Overlay predictions với các noise levels")
     print("  ✓ noise_robustness_report.txt      # Báo cáo tổng hợp")
     print("=" * 100)
 
