@@ -424,17 +424,72 @@ def plot_overlay_predictions(results_dir, model_name, output_dir, num_samples=5)
             y_pred_file = os.path.join(predictions_folder, 'y_pred.npy')
 
             if os.path.exists(y_test_file) and os.path.exists(y_pred_file):
+                # Load từ file có sẵn
                 y_test = np.load(y_test_file)
                 y_pred = np.load(y_pred_file)
-
-                predictions_dict[noise_factor] = {
-                    'y_test': y_test,
-                    'y_pred': y_pred
-                }
-                noise_factors.append(noise_factor)
-                print(f"  ✓ Loaded noise={noise_factor}: {len(y_test)} samples")
             else:
-                print(f"  ⚠️  Không tìm thấy predictions files cho noise={noise_factor}")
+                # Generate predictions từ model
+                print(f"  ⚠️  Không tìm thấy predictions files, đang generate từ model...")
+
+                # Load test data từ cache hoặc tạo mới
+                try:
+                    from data_cache import DataCache
+                    from data_loader import VibrationDataLoader
+                    from data_preprocessing import preprocess_data
+                    from config import Config as cfg
+
+                    cache = DataCache()
+                    cache_key = cache.get_cache_key(
+                        sensor_idx=0,
+                        output_steps=5,  # Assume output_steps=5
+                        add_noise=True,
+                        input_steps=50,
+                        noise_factor=noise_factor
+                    )
+
+                    if cache.cache_exists(cache_key):
+                        data_dict = cache.load_cache(cache_key)
+                    else:
+                        # Load và preprocess data
+                        mat_file = cfg.get_mat_file_path()
+                        data_loader = VibrationDataLoader(mat_file)
+                        full_data = data_loader.load_mat_file()
+                        raw_data = data_loader.extract_sensor_data(sensor_idx=0)
+
+                        # Set config tạm thời
+                        original_output = cfg.OUTPUT_STEPS
+                        original_noise = cfg.NOISE_FACTOR
+                        cfg.OUTPUT_STEPS = 5
+                        cfg.NOISE_FACTOR = noise_factor
+
+                        data_dict = preprocess_data(raw_data, add_noise=True)
+
+                        # Restore config
+                        cfg.OUTPUT_STEPS = original_output
+                        cfg.NOISE_FACTOR = original_noise
+
+                    # Get test data
+                    X_test = data_dict['X_test']
+                    y_test_scaled = data_dict['y_test']
+                    preprocessor = data_dict['preprocessor']
+
+                    # Predict
+                    y_pred_scaled = keras_model.predict(X_test, verbose=0)
+
+                    # Denormalize
+                    y_test = preprocessor.inverse_transform(y_test_scaled)
+                    y_pred = preprocessor.inverse_transform(y_pred_scaled)
+
+                except Exception as e:
+                    print(f"  ❌ Không thể generate predictions: {e}")
+                    continue
+
+            predictions_dict[noise_factor] = {
+                'y_test': y_test,
+                'y_pred': y_pred
+            }
+            noise_factors.append(noise_factor)
+            print(f"  ✓ Loaded noise={noise_factor}: {len(y_test)} samples")
 
         except Exception as e:
             print(f"  ❌ Lỗi khi load predictions cho noise={noise_folder}: {e}")
