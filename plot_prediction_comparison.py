@@ -265,8 +265,24 @@ def plot_comparison_by_output_step(results_dir, output_step, models, output_dir,
     if num_models == 1:
         axes = axes.reshape(-1, 1)
 
-    colors = {'conv1d_gru': '#2ecc71', 'gru': '#3498db', 'conv1d': '#e74c3c'}
-    model_names = {'conv1d_gru': 'Conv1D-GRU-ResNet', 'gru': 'GRU', 'conv1d': 'Conv1D'}
+    colors = {
+        'cnn': '#e74c3c',              # Đỏ - CNN
+        'gru': '#3498db',              # Xanh dương - GRU
+        'cnn_gru': '#2ecc71',          # Xanh lá - CNN+GRU
+        'cnn_resnet': '#9b59b6',       # Tím - CNN+ResNet
+        'cnn_resnet_gru': '#f39c12',   # Cam - CNN+ResNet+GRU
+        'conv1d': '#e74c3c',           # Đỏ - Conv1D (legacy)
+        'conv1d_gru': '#f39c12'        # Cam - Conv1D-GRU (legacy)
+    }
+    model_names = {
+        'cnn': 'CNN',
+        'gru': 'GRU',
+        'cnn_gru': 'CNN+GRU',
+        'cnn_resnet': 'CNN+ResNet',
+        'cnn_resnet_gru': 'CNN+ResNet+GRU',
+        'conv1d': 'Conv1D',
+        'conv1d_gru': 'Conv1D-GRU-ResNet'
+    }
 
     # Get y_true (same for all models)
     y_true_ref = list(predictions_data.values())[0]['y_true']
@@ -321,7 +337,15 @@ def plot_comparison_by_model(results_dir, model, output_steps, output_dir, num_s
         output_dir: Thư mục output
         num_samples: Số samples để vẽ
     """
-    model_names = {'conv1d_gru': 'Conv1D-GRU-ResNet', 'gru': 'GRU', 'conv1d': 'Conv1D'}
+    model_names = {
+        'cnn': 'CNN',
+        'gru': 'GRU',
+        'cnn_gru': 'CNN+GRU',
+        'cnn_resnet': 'CNN+ResNet',
+        'cnn_resnet_gru': 'CNN+ResNet+GRU',
+        'conv1d': 'Conv1D',
+        'conv1d_gru': 'Conv1D-GRU-ResNet'
+    }
     print(f"\n📊 Đang vẽ comparison cho model={model}...")
 
     # Load predictions cho tất cả output_steps
@@ -505,18 +529,26 @@ def plot_overlay_comparison(results_dir, output_step, models, output_dir, num_sa
         print(f"  ⚠️  Không load được past data: {e}")
         past_data_list = None
 
-    # Colors cho từng model
+    # Colors cho từng model - distinct colors cho dễ phân biệt
     colors = {
-        'conv1d_gru': '#2ecc71',  # Xanh lá - Conv1D-GRU-ResNet
-        'gru': '#3498db',          # Xanh dương - GRU
-        'conv1d': '#e74c3c'        # Đỏ - Conv1D
+        'cnn': '#e74c3c',              # Đỏ - CNN
+        'gru': '#3498db',              # Xanh dương - GRU
+        'cnn_gru': '#2ecc71',          # Xanh lá - CNN+GRU
+        'cnn_resnet': '#9b59b6',       # Tím - CNN+ResNet
+        'cnn_resnet_gru': '#f39c12',   # Cam - CNN+ResNet+GRU
+        'conv1d': '#e74c3c',           # Đỏ - Conv1D (legacy)
+        'conv1d_gru': '#f39c12'        # Cam - Conv1D-GRU (legacy)
     }
 
     # Model name mapping
     model_names = {
-        'conv1d_gru': 'Conv1D-GRU-ResNet',
+        'cnn': 'CNN',
         'gru': 'GRU',
-        'conv1d': 'Conv1D'
+        'cnn_gru': 'CNN+GRU',
+        'cnn_resnet': 'CNN+ResNet',
+        'cnn_resnet_gru': 'CNN+ResNet+GRU',
+        'conv1d': 'Conv1D',
+        'conv1d_gru': 'Conv1D-GRU-ResNet'
     }
 
     # Tạo subplots (num_samples rows, 1 column)
@@ -600,8 +632,24 @@ def plot_all_combinations_grid(results_dir, models, output_steps, output_dir, sa
     if num_steps == 1:
         axes = axes.reshape(-1, 1)
 
-    colors = {'conv1d_gru': '#2ecc71', 'gru': '#3498db', 'conv1d': '#e74c3c'}
-    model_names = {'conv1d_gru': 'Conv1D-GRU-ResNet', 'gru': 'GRU', 'conv1d': 'Conv1D'}
+    colors = {
+        'cnn': '#e74c3c',              # Đỏ - CNN
+        'gru': '#3498db',              # Xanh dương - GRU
+        'cnn_gru': '#2ecc71',          # Xanh lá - CNN+GRU
+        'cnn_resnet': '#9b59b6',       # Tím - CNN+ResNet
+        'cnn_resnet_gru': '#f39c12',   # Cam - CNN+ResNet+GRU
+        'conv1d': '#e74c3c',           # Đỏ - Conv1D (legacy)
+        'conv1d_gru': '#f39c12'        # Cam - Conv1D-GRU (legacy)
+    }
+    model_names = {
+        'cnn': 'CNN',
+        'gru': 'GRU',
+        'cnn_gru': 'CNN+GRU',
+        'cnn_resnet': 'CNN+ResNet',
+        'cnn_resnet_gru': 'CNN+ResNet+GRU',
+        'conv1d': 'Conv1D',
+        'conv1d_gru': 'Conv1D-GRU-ResNet'
+    }
 
     for model_idx, model in enumerate(models):
         for step_idx, out_step in enumerate(output_steps):
